@@ -99,17 +99,6 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 - [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM
 - [TCG DEX Api](https://tcgdex.dev/rest) - Card data and images
 
-## 📁 Project Structure
-PokemonInventory_Tracker / 
-├── MainWindow.xaml(.cs)           # Main application window
-├── AddCardDialog.xaml(.cs)        # Add/update card dialog
-├── AddEditionDialog.xaml(.cs)     # Add edition dialog
-├── DatabaseSettingsDialog.xaml(.cs) # Database config dialog
-├── PokemonTcgService.cs           # API service 
-├── DatabaseConfig.cs              # Database configuration 
-└── README.md                      # This file
-
-
 ## 🗄️ Database Schema
 
 ### `card_editions` Table
