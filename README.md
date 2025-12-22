@@ -1,6 +1,6 @@
 ﻿# 🎴 Pokémon Card Collection Manager
 
-A modern WPF desktop application for managing your Pokémon Trading Card Game collection with real-time pricing from TCGdex API.
+A modern WPF desktop application for managing your Pokémon Trading Card Game collection with real-time pricing from TCG DEX Api.
 
 ![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -8,20 +8,18 @@ A modern WPF desktop application for managing your Pokémon Trading Card Game co
 ![GitHub release](https://img.shields.io/github/v/release/gadzzaa/PokeTracker)
 ![GitHub issues](https://img.shields.io/github/issues/gadzzaa/PokeTracker)
 
-## 💖 Support
+## 🎯 Who This Is For
 
-If you find this project helpful and would like to support its development:
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gadzzaa)
-
-Your support helps keep this project maintained and improved! ☕
+- Pokémon TCG collectors tracking **physical cards**
+- Users who want an **offline-first**, local database
+- Collectors interested in **rarity and market value**, not trading
 
 ## ✨ Features
 
 - 📊 **Track Your Collection** - Manage cards across multiple sets/editions
-- 💰 **Real-Time Pricing** - Automatic price updates from Pokémon TCG API
+- 💰 **Real-Time Pricing** - Automatic price updates from TCG DEX Api
 - 📸 **Card Images** - High-quality images loaded and cached automatically
-- 📈 **Copy Management** - Track multiple copies of the same card
+- 📈 **Copy Management** - Automatically track duplicate cards and total copies
 - 🔍 **Smart Search** - Find cards by edition, rarity, and price
 - 🎨 **Modern UI** - Smooth animations and intuitive interface
 - 🗄️ **Configurable Database** - Easy MySQL connection setup
@@ -30,12 +28,20 @@ Your support helps keep this project maintained and improved! ☕
 ## 📸 Screenshots
 
 <p align="center">
-<img src="Screenshots/Screenshot 1.png" width="1000" height="1600" />
+<img src="Screenshots/Screenshot 1.png" width="800" />
 </p>
 <p align="center">
-   <img src="Screenshots/Screenshot 2.png" width="300" height="600" />
-   <img src="Screenshots/Screenshot 4.png" width="300" height="600" />
+   <img src="Screenshots/Screenshot 2.png" width="300" />
+   <img src="Screenshots/Screenshot 4.png" width="300" />
 </p>
+
+## 💖 Support
+
+If you find this project helpful and would like to support its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gadzzaa)
+
+Your support helps keep this project maintained and improved! ☕
 
 ## 🚀 Getting Started
 
@@ -47,6 +53,21 @@ Your support helps keep this project maintained and improved! ☕
 2. Download the latest `.zip` file
 3. Extract to desired location
 4. Run `PokemonCardCollection.exe`
+5. **Install MySQL** (if not already installed)
+   - Download from [MySQL Official Site](https://dev.mysql.com/downloads/mysql/)
+6. (Optional) Import a default template for card_editions into the database
+   ```bash
+   INSERT INTO `card_editions` (`id`, `type`, `nr_pachete`, `edition_identifier`) VALUES
+   (1, 'Stellar Crown', 32, 'sv07'),
+   (2, 'Phantasmal Flames', 20, 'me02'),
+   (3, 'Surging Sparks', 11, 'sv08'),
+   (4, 'Mega Evolutions', 30, 'me01'),
+   (5, 'Obsidian Flames', 2, 'sv03'),
+   (6, 'Journey Together', 7, 'sv09'),
+   (7, 'White Flare', 8, 'sv10.5w'),
+   (8, 'Black Bolt', 18, 'sv10.5b'),
+   (9, 'Destined Rivals', 6, 'sv10');
+   ```
 
 ### Option 2: Build from Source
 
@@ -72,14 +93,28 @@ See [Building from Source](#building-from-source) section below.
      ```bash
      docker run --name mysql-pokemon -e MYSQL_ROOT_PASSWORD=your_password -p 3306:3306 -d mysql:8.0
      ```
+     
+3. (Optional) Import a default template for card_editions into the database
+   ```bash
+   INSERT INTO `card_editions` (`id`, `type`, `nr_pachete`, `edition_identifier`) VALUES
+   (1, 'Stellar Crown', 32, 'sv07'),
+   (2, 'Phantasmal Flames', 20, 'me02'),
+   (3, 'Surging Sparks', 11, 'sv08'),
+   (4, 'Mega Evolutions', 30, 'me01'),
+   (5, 'Obsidian Flames', 2, 'sv03'),
+   (6, 'Journey Together', 7, 'sv09'),
+   (7, 'White Flare', 8, 'sv10.5w'),
+   (8, 'Black Bolt', 18, 'sv10.5b'),
+   (9, 'Destined Rivals', 6, 'sv10');
+   ```
 
-3. **Build the application**
+4. **Build the application**
 
    ```bash
    dotnet build
    ```
 
-4. **Run the application**
+5. **Run the application**
 
    ```bash
    dotnet run
@@ -103,6 +138,11 @@ Configuration is saved to: `%AppData%\PokemonCardCollection\dbconfig.json`
 
 You can access database settings anytime via the **⚙️ Database Settings** button in the application.
 
+### Why MySQL?
+
+MySQL was chosen for reliability, performance, and easy future expansion
+(statistics, cloud sync, or multi-user support).
+
 ## 🎮 Usage
 
 ### Adding Editions
@@ -117,7 +157,7 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 1. Select an edition from the left panel
 2. Click **➕ Add New Card**
 3. Enter the card number (e.g., "123")
-4. The app will fetch card data from the Pokémon TCG API
+4. The app will fetch card data from the TCG DEX Api
 5. Card is automatically added with current price
 
 ### Managing Copies
@@ -131,6 +171,13 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 - **Arrow Right (→)**: Move to next card
 - **Arrow Left (←)**: Move to previous card
 - Navigation wraps around (last card → first card and vice versa)
+  
+## 🔐 Privacy & Data
+
+- No accounts required
+- No cloud sync
+- No analytics or tracking
+- All data is stored locally in your MySQL database
 
 ## 🏗️ Built With
 
@@ -165,6 +212,13 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 | image      | TEXT          | Image URL                    |
 | pull_date  | DATETIME      | Date added                   |
 
+## ⚠️ Current Limitations
+
+- Windows-only (WPF)
+- Requires a local MySQL database
+- Not a marketplace or selling platform
+- No mobile or cloud sync (yet)
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -185,11 +239,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - All contributors who help improve this project
 - The Pokémon Company for creating an amazing card game
 
-## 📞 Support
+## 📞 Help
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/PokemonInventory_Tracker/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/PokemonInventory_Tracker/discussions)
-- **Ko-fi**: [Support the project](https://ko-fi.com/gadzzaa)
+- **Issues**: [GitHub Issues](https://github.com/gadzzaa/PokeTracker/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/gadzzaa/PokeTracker/discussions)
 
 ## 🔮 Future Features
 
