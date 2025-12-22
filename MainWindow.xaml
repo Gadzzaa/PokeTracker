@@ -549,6 +549,25 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Copies Management -->
+                        <Border Background="#1a2a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#e74c3c" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Manage Copies" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                
+                                <!-- Remove Copy Button -->
+                                <Button Content="➖ Remove Copy" 
+                                        Style="{StaticResource PokemonButton}"
+                                        Click="RemoveCopy_Click"
+                                        Background="#e74c3c"
+                                        FontSize="14"
+                                        Padding="10,8"
+                                        Margin="0,5,0,0"
+                                        HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Pull Date -->
                         <Border Background="#1a2a2e" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#3498db" BorderThickness="2">

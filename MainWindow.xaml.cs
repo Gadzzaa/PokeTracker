@@ -392,6 +392,8 @@ namespace WpfApp1
             {
                 CardImage.Source = null;
             }
+
+            CardCopies.Text = card.Copies.ToString(); // Update copies text
         }
 
         private async Task LoadAndDisplayImageAsync(string imageUrl)
@@ -426,6 +428,7 @@ namespace WpfApp1
             PullDate.Text = "N/A";
             CardEdition.Text = "N/A";
             CardImage.Source = null;
+            CardCopies.Text = "0"; // Reset copies text
         }
 
         private async void AddEdition_Click(object sender, RoutedEventArgs e)
@@ -476,6 +479,51 @@ namespace WpfApp1
                     catch (Exception ex)
                     {
                         MessageBox.Show($"Error deleting card: {ex.Message}", "Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private void RemoveCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (CardListBox.SelectedItem is Card card)
+            {
+                if (card.Copies <= 1)
+                {
+                    MessageBox.Show("This is the last copy. Use the delete button (✕) to remove the card completely.",
+                        "Cannot Remove",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                var result = MessageBox.Show(
+                    $"Remove one copy of '{card.Name}'?\n\nCopies will go from {card.Copies} to {card.Copies - 1}",
+                    "Remove Copy",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        using (var conn = new MySqlConnection(connStr))
+                        {
+                            string sql = "UPDATE cards SET copies = copies - 1 WHERE id = @Id";
+                            conn.Execute(sql, new { Id = card.Id });
+                        }
+
+                        // Update the card object and UI
+                        card.Copies--;
+                        CardCopies.Text = card.Copies.ToString();
+                        
+                        // Refresh the list display to show updated count
+                        CardListBox.Items.Refresh();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error removing copy: {ex.Message}", "Error",
                             MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
