@@ -5,6 +5,14 @@ A modern WPF desktop application for managing your Pokémon Trading Card Game co
 ![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+## 💖 Support
+
+If you find this project helpful and would like to support its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gadzzaa)
+
+Your support helps keep this project maintained and improved! ☕
+
 ## ✨ Features
 
 - 📊 **Track Your Collection** - Manage cards across multiple sets/editions
@@ -139,14 +147,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 💖 Support
-
-If you find this project helpful and would like to support its development:
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gadzzaa)
-
-Your support helps keep this project maintained and improved! ☕
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -176,5 +176,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ for Pokémon TCG collectors
+
 **Note**: This application is not affiliated with or endorsed by The Pokémon Company, Nintendo, or Game Freak. Pokémon is a registered trademark of The Pokémon Company.
 
