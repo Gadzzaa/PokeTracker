@@ -1,0 +1,433 @@
+﻿<Window x:Class="WpfApp1.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfApp1"
+        mc:Ignorable="d"
+        Title="Pokémon Card Collection" Height="900" Width="1400" 
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- Pokéball Gradient Background -->
+        <LinearGradientBrush x:Key="PokemonGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#ee1515" Offset="0"/>
+            <GradientStop Color="#ff6b6b" Offset="0.5"/>
+            <GradientStop Color="#feca57" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Card Display Gradient -->
+        <LinearGradientBrush x:Key="CardGradient" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#0f3460" Offset="0"/>
+            <GradientStop Color="#16213e" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Hover Effect for ListBox Items -->
+        <Style x:Key="PokemonListBoxItem" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#feca57"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="BorderBrush" Value="#feca57"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="ItemBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="3"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Glow Text Style -->
+        <Style x:Key="GlowText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#feca57"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- Button Style -->
+        <Style x:Key="PokemonButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource PokemonGradient}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.8"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#1a1a2e">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Panel: Edition Selector -->
+        <Border Grid.Column="0" Background="#16213e" 
+                BorderBrush="#ee1515" BorderThickness="0,0,3,0"
+                Margin="10">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
+                        Padding="15" CornerRadius="10,10,0,0" Margin="5,5,5,15">
+                    <TextBlock Text="Card Editions" 
+                               FontSize="22" 
+                               FontWeight="Bold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </Border>
+
+                <!-- Edition ListBox -->
+                <ListBox Grid.Row="1" 
+                         Name="EditionSelector" 
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ItemContainerStyle="{StaticResource PokemonListBoxItem}"
+                         SelectionChanged="EditionSelector_SelectionChanged"
+                         Margin="5">
+                </ListBox>
+
+                <!-- Add Edition Button -->
+                <Button Grid.Row="2" 
+                        Content="Add New Edition" 
+                        Style="{StaticResource PokemonButton}"
+                        Click="AddEdition_Click"
+                        Margin="10"/>
+            </Grid>
+        </Border>
+
+        <!-- Middle Panel: Card List -->
+        <Border Grid.Column="1" Background="#16213e" 
+                BorderBrush="#feca57" BorderThickness="0,0,3,0"
+                Margin="10">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
+                        Padding="15" CornerRadius="10,10,0,0" Margin="5,5,5,15">
+                    <TextBlock Text="Cards" 
+                               FontSize="22" 
+                               FontWeight="Bold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </Border>
+
+                <!-- Card ListBox with Custom Template -->
+                <ListBox Grid.Row="1" 
+                         Name="CardListBox" 
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         SelectionChanged="CardListBox_SelectionChanged"
+                         Margin="5">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="#feca57"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="5"/>
+                            <Setter Property="BorderBrush" Value="#feca57"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="ItemBorder" 
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8"
+                                                Padding="10,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <ContentPresenter Grid.Column="0" 
+                                                                 HorizontalAlignment="Left" 
+                                                                 VerticalAlignment="Center"/>
+                                                
+                                                <!-- Delete Button -->
+                                                <Button Grid.Column="1" 
+                                                        Content="✕" 
+                                                        Width="28" 
+                                                        Height="28"
+                                                        FontSize="16"
+                                                        FontWeight="Bold"
+                                                        Foreground="White"
+                                                        Background="#ee1515"
+                                                        BorderThickness="0"
+                                                        VerticalAlignment="Center"
+                                                        Cursor="Hand"
+                                                        Margin="5,0,0,0"
+                                                        Click="DeleteCard_Click"
+                                                        Tag="{Binding}">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                    CornerRadius="14"
+                                                                    BorderThickness="0">
+                                                                <ContentPresenter HorizontalAlignment="Center" 
+                                                                                VerticalAlignment="Center"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Setter Property="Background" Value="#ee1515"/>
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Background" Value="#ff0000"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
+                                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
+                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="3"/>
+                                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" 
+                                       FontSize="16" 
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Add Card Button -->
+                <Button Grid.Row="2" 
+                        Content="Add New Card" 
+                        Style="{StaticResource PokemonButton}"
+                        Click="AddCard_Click"
+                        Margin="10"/>
+            </Grid>
+        </Border>
+
+        <!-- Right Panel: Card Display Area -->
+        <Border Grid.Column="2" Background="{StaticResource CardGradient}" 
+                CornerRadius="15" Margin="10"
+                BorderBrush="#feca57" BorderThickness="2">
+
+            <Grid Name="DisplayArea" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title Header -->
+                <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
+                        Padding="15" CornerRadius="10" Margin="0,0,0,20">
+                    <TextBlock Text="Pokemon Card Details" 
+                               FontSize="28" 
+                               FontWeight="Bold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </Border>
+
+                <!-- Main Content Area with 3 columns -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column: Card Info -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
+                        <!-- Card Number -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#ee1515" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Card Number" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardNumber" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="24"
+                                          Margin="0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Name -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#feca57" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Name" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardName" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="20"
+                                          Margin="0"
+                                          TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Rarity -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#ff6b6b" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Rarity" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardRarity" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="20"
+                                          Margin="0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Center Column: Card Image -->
+                    <Border Grid.Column="1" 
+                            Background="#0a0a0f" 
+                            CornerRadius="15" 
+                            BorderBrush="{StaticResource PokemonGradient}" 
+                            BorderThickness="3"
+                            Padding="10"
+                            VerticalAlignment="Center">
+                        <Image Name="CardImage" 
+                               Width="290" 
+                               Height="400" 
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Right Column: Additional Info -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="15,0,0,0">
+                        <!-- Price -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#5cd85a" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Price" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardPrice" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="24"
+                                          FontWeight="Bold"
+                                          Foreground="#5cd85a"
+                                          Margin="0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Pull Date -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#3498db" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Pull Date" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="PullDate" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="18"
+                                          Margin="0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Set Info Placeholder -->
+                        <Border Background="#1a1a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#9b59b6" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Edition" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardEdition" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="16"
+                                          Margin="0"
+                                          TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
