@@ -41,10 +41,14 @@ git clone https://github.com/yourusername/pokemon-card-collection.git cd pokemon
      ```
 
 3. **Build the application**
-dotnet build
+   ```bash
+   dotnet build
+   ```
 
-4. **Run the application**
-dotnet run
+5. **Run the application**
+   ```bash
+   dotnet run
+   ```
 
 
 ## ⚙️ Configuration
@@ -101,7 +105,6 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 - [MySQL](https://www.mysql.com/) - Database
 - [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM
 - [TCG DEX Api](https://tcgdex.dev/rest) - Card data and images
-
 
 ## 🗄️ Database Schema
 
@@ -173,5 +176,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ for Pokémon TCG collectors
-
 **Note**: This application is not affiliated with or endorsed by The Pokémon Company, Nintendo, or Game Freak. Pokémon is a registered trademark of The Pokémon Company.
+
