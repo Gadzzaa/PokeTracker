@@ -1,5 +1,5 @@
-﻿# 🎴 Pokémon Card Collection Manager
-
+﻿# 🎴 Pokémon Inventory Tracker
+ 
 A modern WPF desktop application for managing your Pokémon Trading Card Game collection with real-time pricing from the Pokémon TCG API.
 
 ![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)
