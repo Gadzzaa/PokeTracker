@@ -62,7 +62,7 @@ namespace WpfApp1
                 
                 if (cardData == null)
                 {
-                    MessageBox.Show($"Card '{fullCardId}' not found in the Pokemon TCG API.\n\nPlease check the card number.",
+                    MessageBox.Show($"Card '{fullCardId}' not found in the TCGDEX API.\n\nPlease check the card number.",
                         "Card Not Found",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);

@@ -48,8 +48,8 @@ namespace WpfApp1
         private bool isAnimating = false;
 
         // Cache configuration
-        private const int MAX_CACHE_SIZE_MB = 200; // Maximum 200MB of cached images
-        private const int MAX_CACHE_ITEMS = 100; // Maximum 100 images
+        private const int MAX_CACHE_SIZE_MB = 1000;
+        private const int MAX_CACHE_ITEMS = 100;
         private long currentCacheSize = 0;
 
         public MainWindow ()

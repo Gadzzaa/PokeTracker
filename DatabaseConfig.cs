@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization; // Add this line for JsonIgnore
+using System.Text.Json.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -11,13 +11,11 @@ namespace WpfApp1
         public string Server { get; set; } = "localhost";
         public string User { get; set; } = "root";
 
-        // Store encrypted password
         private string? _encryptedPassword;
 
         [JsonIgnore]
         public string Password { get; set; } = "";
 
-        // For JSON serialization
         public string? EncryptedPassword
         {
             get => _encryptedPassword;
@@ -33,7 +31,6 @@ namespace WpfApp1
             "dbconfig.json"
         );
 
-        // Simple encryption key (for basic protection)
         private static byte[] GetEncryptionKey ()
         {
             return SHA256.HashData(Encoding.UTF8.GetBytes(Environment.MachineName + Environment.UserName));
@@ -58,7 +55,6 @@ namespace WpfApp1
                     string json = File.ReadAllText(ConfigFilePath);
                     var config = JsonSerializer.Deserialize<DatabaseConfig>(json) ?? new DatabaseConfig();
 
-                    // Decrypt password
                     if (!string.IsNullOrEmpty(config.EncryptedPassword))
                     {
                         config.Password = DecryptPassword(config.EncryptedPassword);
@@ -67,9 +63,9 @@ namespace WpfApp1
                     return config;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading config: {ex.Message}");
+                // Failed to load config, return default
             }
 
             return new DatabaseConfig();
@@ -85,7 +81,6 @@ namespace WpfApp1
                     Directory.CreateDirectory(directory);
                 }
 
-                // Encrypt password before saving
                 if (!string.IsNullOrEmpty(Password))
                 {
                     _encryptedPassword = EncryptPassword(Password);
@@ -95,9 +90,9 @@ namespace WpfApp1
                 string json = JsonSerializer.Serialize(this, options);
                 File.WriteAllText(ConfigFilePath, json);
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving config: {ex.Message}");
+                // Failed to save config
             }
         }
 
@@ -115,7 +110,6 @@ namespace WpfApp1
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             byte[] encrypted = encryptor.TransformFinalBlock(passwordBytes, 0, passwordBytes.Length);
 
-            // Combine IV and encrypted data
             byte[] result = new byte[iv.Length + encrypted.Length];
             Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
             Buffer.BlockCopy(encrypted, 0, result, iv.Length, encrypted.Length);
@@ -130,7 +124,6 @@ namespace WpfApp1
                 byte[] key = GetEncryptionKey();
                 byte[] fullData = Convert.FromBase64String(encryptedPassword);
 
-                // Extract IV and encrypted data
                 byte[] iv = new byte[16];
                 byte[] encrypted = new byte[fullData.Length - 16];
                 Buffer.BlockCopy(fullData, 0, iv, 0, 16);
