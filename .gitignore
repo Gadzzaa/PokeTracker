@@ -76,3 +76,9 @@ dbconfig.json
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+./build-release.bat
+build-release.bat
+logo.png
+Properties/PublishProfiles/FolderProfile.pubxml
+Properties/PublishProfiles/FolderProfile1.pubxml
