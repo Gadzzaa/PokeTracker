@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
-        Title="Pokémon Card Collection" Height="900" Width="1400" 
+        Title="Pokémon Card Collection" Height="950" Width="1500" 
         WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        MinHeight="800" MinWidth="1200">
 
     <Window.Resources>
         <!-- Pokéball Gradient Background -->
@@ -23,29 +24,15 @@
             <GradientStop Color="#16213e" Offset="1"/>
         </LinearGradientBrush>
 
-        <!-- Fade In Animation -->
-        <Storyboard x:Key="FadeInAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                           From="0" To="1" Duration="0:0:0.3"/>
-        </Storyboard>
-
-        <!-- Scale Up Animation -->
-        <Storyboard x:Key="ScaleUpAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                           From="0.95" To="1" Duration="0:0:0.2"/>
-            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                           From="0.95" To="1" Duration="0:0:0.2"/>
-        </Storyboard>
-
-        <!-- Hover Effect for ListBox Items -->
+        <!-- Hover Effect for ListBox Items - FIXED NO MOVEMENT -->
         <Style x:Key="PokemonListBoxItem" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#feca57"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Padding" Value="10,8"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="BorderBrush" Value="#feca57"/>
-            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
@@ -55,68 +42,36 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="8"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
                                 <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                           To="1.02" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                           To="1.02" Duration="0:0:0.1"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                           To="1" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                           To="1" Duration="0:0:0.1"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
                                 <Setter Property="Foreground" Value="White"/>
-                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="3"/>
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Setter Property="RenderTransform">
-                <Setter.Value>
-                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         </Style>
 
         <!-- Glow Text Style -->
         <Style x:Key="GlowText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#feca57"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style x:Key="ValueText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="Margin" Value="0"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
 
@@ -124,9 +79,9 @@
         <Style x:Key="PokemonButton" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PokemonGradient}"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Padding" Value="18,12"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
@@ -140,7 +95,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="ButtonBorder"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="8"
+                                CornerRadius="10"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
@@ -153,9 +108,17 @@
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                               To="1.05" Duration="0:0:0.1"/>
+                                               To="1.05" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <QuadraticEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                               To="1.05" Duration="0:0:0.1"/>
+                                               To="1.05" Duration="0:0:0.15">
+                                    <DoubleAnimation.EasingFunction>
+                                        <QuadraticEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.EnterActions>
@@ -163,9 +126,9 @@
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                               To="1" Duration="0:0:0.1"/>
+                                               To="1" Duration="0:0:0.15"/>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                               To="1" Duration="0:0:0.1"/>
+                                               To="1" Duration="0:0:0.15"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.ExitActions>
@@ -175,9 +138,9 @@
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                               To="0.95" Duration="0:0:0.05"/>
+                                               To="0.97" Duration="0:0:0.08"/>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                               To="0.95" Duration="0:0:0.05"/>
+                                               To="0.97" Duration="0:0:0.08"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.EnterActions>
@@ -189,10 +152,10 @@
         <Style x:Key="DeleteButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#ee1515"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
@@ -205,7 +168,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="14">
+                                CornerRadius="13">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
@@ -218,7 +181,11 @@
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                               To="90" Duration="0:0:0.2"/>
+                                               To="90" Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <QuadraticEase EasingMode="EaseInOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.EnterActions>
@@ -226,7 +193,11 @@
                         <BeginStoryboard>
                             <Storyboard>
                                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                               To="0" Duration="0:0:0.2"/>
+                                               To="0" Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <QuadraticEase EasingMode="EaseInOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
                             </Storyboard>
                         </BeginStoryboard>
                     </Trigger.ExitActions>
@@ -241,7 +212,11 @@
             <BeginStoryboard>
                 <Storyboard>
                     <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                   From="0" To="1" Duration="0:0:0.5"/>
+                                   From="0" To="1" Duration="0:0:0.6">
+                        <DoubleAnimation.EasingFunction>
+                            <QuadraticEase EasingMode="EaseOut"/>
+                        </DoubleAnimation.EasingFunction>
+                    </DoubleAnimation>
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>
@@ -249,15 +224,15 @@
 
     <Grid Background="#1a1a2e">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
-            <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="270"/>
+            <ColumnDefinition Width="330"/>
+            <ColumnDefinition Width="*" MinWidth="600"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left Panel: Edition Selector -->
         <Border Grid.Column="0" Background="#16213e" 
                 BorderBrush="#ee1515" BorderThickness="0,0,3,0"
-                Margin="10">
+                Margin="12,12,6,12">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -268,9 +243,9 @@
 
                 <!-- Header -->
                 <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
-                        Padding="15" CornerRadius="10,10,0,0" Margin="5,5,5,15">
+                        Padding="18" CornerRadius="12,12,0,0" Margin="8,8,8,20">
                     <TextBlock Text="Card Editions" 
-                               FontSize="22" 
+                               FontSize="20" 
                                FontWeight="Bold" 
                                Foreground="White" 
                                HorizontalAlignment="Center"
@@ -285,7 +260,7 @@
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ItemContainerStyle="{StaticResource PokemonListBoxItem}"
                          SelectionChanged="EditionSelector_SelectionChanged"
-                         Margin="5">
+                         Margin="8,0,8,8">
                 </ListBox>
 
                 <!-- Add Edition Button -->
@@ -293,14 +268,14 @@
                         Content="➕ Add Edition" 
                         Style="{StaticResource PokemonButton}"
                         Click="AddEdition_Click"
-                        Margin="10"/>
+                        Margin="12,8,12,12"/>
             </Grid>
         </Border>
 
         <!-- Middle Panel: Card List -->
         <Border Grid.Column="1" Background="#16213e" 
                 BorderBrush="#feca57" BorderThickness="0,0,3,0"
-                Margin="10">
+                Margin="6,12,6,12">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -311,69 +286,65 @@
 
                 <!-- Header -->
                 <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
-                        Padding="15" CornerRadius="10,10,0,0" Margin="5,5,5,15">
+                        Padding="18" CornerRadius="12,12,0,0" Margin="8,8,8,20">
                     <TextBlock Text="Cards" 
-                               FontSize="22" 
+                               FontSize="20" 
                                FontWeight="Bold" 
                                Foreground="White" 
                                HorizontalAlignment="Center"
                                TextAlignment="Center"/>
                 </Border>
 
-                <!-- Card ListBox -->
+                <!-- Card ListBox with fade animation -->
                 <ListBox Grid.Row="1" 
-                         Name="CardListBox" 
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         SelectionChanged="CardListBox_SelectionChanged"
-                         Margin="5">
+         Name="CardListBox" 
+         Background="Transparent"
+         BorderThickness="0"
+         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+         SelectionChanged="CardListBox_SelectionChanged"
+         Margin="8,0,8,8"
+         Opacity="1">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem" BasedOn="{StaticResource PokemonListBoxItem}">
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
                                         <Border x:Name="ItemBorder" 
-                                                Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="{TemplateBinding BorderThickness}"
-                                                CornerRadius="8"
-                                                Padding="{TemplateBinding Padding}"
-                                                RenderTransformOrigin="0.5,0.5">
-                                            <Border.RenderTransform>
-                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                            </Border.RenderTransform>
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                
+
                                                 <ContentPresenter Grid.Column="0" 
-                                                                 HorizontalAlignment="Left" 
-                                                                 VerticalAlignment="Center"/>
-                                                
+                                                 HorizontalAlignment="Left" 
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,8,0"/>
+
                                                 <!-- Delete Button with animation -->
                                                 <Button Grid.Column="1" 
-                                                        Content="✕" 
-                                                        Style="{StaticResource DeleteButtonStyle}"
-                                                        VerticalAlignment="Center"
-                                                        Margin="5,0,0,0"
-                                                        Click="DeleteCard_Click"
-                                                        Tag="{Binding}"/>
+                                        Content="✕" 
+                                        Style="{StaticResource DeleteButtonStyle}"
+                                        VerticalAlignment="Center"
+                                        Margin="8,0,0,0"
+                                        Click="DeleteCard_Click"
+                                        Tag="{Binding}"/>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
                                                 <Setter Property="Foreground" Value="White"/>
-                                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
                                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                                             </Trigger>
                                             <Trigger Property="IsSelected" Value="True">
                                                 <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
                                                 <Setter Property="Foreground" Value="White"/>
-                                                <Setter TargetName="ItemBorder" Property="BorderThickness" Value="3"/>
                                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
@@ -386,17 +357,20 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding Name}" 
-                                           FontSize="16" 
-                                           TextTrimming="CharacterEllipsis"/>
+                           FontSize="15" 
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="220"
+                           VerticalAlignment="Center"/>
                                 <TextBlock Text=" x" 
-                                           FontSize="14" 
-                                           Margin="5,0,0,0"
-                                           Foreground="#feca57"/>
+                           FontSize="13" 
+                           Margin="6,0,2,0"
+                           Foreground="#feca57"
+                           VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Copies}" 
-                                           FontSize="14" 
-                                           FontWeight="Bold"
-                                           Foreground="#5cd85a"
-                                           Margin="0,0,5,0"/>
+                           FontSize="13" 
+                           FontWeight="Bold"
+                           Foreground="#5cd85a"
+                           VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -407,198 +381,200 @@
                         Content="➕ Add New Card" 
                         Style="{StaticResource PokemonButton}"
                         Click="AddCard_Click"
-                        Margin="10"/>
+                        Margin="12,8,12,12"/>
             </Grid>
         </Border>
 
         <!-- Right Panel: Card Display Area with fade animation -->
         <Border Grid.Column="2" Background="{StaticResource CardGradient}" 
-                CornerRadius="15" Margin="10"
+                CornerRadius="15" Margin="6,12,12,12"
                 BorderBrush="#feca57" BorderThickness="2"
                 Name="CardDisplayPanel">
 
-            <Grid Name="DisplayArea" Margin="20">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                         HorizontalScrollBarVisibility="Disabled"
+                         Margin="0">
+                <Grid Name="DisplayArea" Margin="25">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Title Header -->
-                <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
-                        Padding="15" CornerRadius="10" Margin="0,0,0,20">
-                    <TextBlock Text="Pokemon Card Details" 
-                               FontSize="28" 
-                               FontWeight="Bold" 
-                               Foreground="White" 
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center"/>
-                </Border>
-
-                <!-- Main Content Area with 3 columns -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Left Column: Card Info -->
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
-                        <!-- Card Number -->
-                        <Border Background="#1a2a38" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#ee1515" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Card Number" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardNumber" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="24"
-                                          Margin="0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Name -->
-                        <Border Background="#1a2a38" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#feca57" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Name" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardName" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="20"
-                                          Margin="0"
-                                          TextAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Rarity -->
-                        <Border Background="#1a2a38" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#ff6b6b" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Rarity" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardRarity" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="20"
-                                          Margin="0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Copies Count -->
-                        <Border Background="#1a2a2e" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#e74c3c" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Copies Owned" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardCopies" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="28"
-                                          FontWeight="Bold"
-                                          Foreground="#5cd85a"
-                                          Margin="0"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Center Column: Card Image -->
-                    <Border Grid.Column="1" 
-                            Background="#0a0a0f" 
-                            CornerRadius="15" 
-                            BorderBrush="{StaticResource PokemonGradient}" 
-                            BorderThickness="3"
-                            Padding="10"
-                            VerticalAlignment="Center">
-                        <Image Name="CardImage" 
-                               Width="290" 
-                               Height="400" 
-                               Stretch="Uniform"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center">
-                            <Image.Triggers>
-                                <EventTrigger RoutedEvent="Image.Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                           From="0" To="1" Duration="0:0:0.3"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Image.Triggers>
-                        </Image>
+                    <!-- Title Header -->
+                    <Border Grid.Row="0" Background="{StaticResource PokemonGradient}" 
+                            Padding="18" CornerRadius="12" Margin="0,0,0,25">
+                        <TextBlock Text="Pokemon Card Details" 
+                                   FontSize="26" 
+                                   FontWeight="Bold" 
+                                   Foreground="White" 
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
                     </Border>
 
-                    <!-- Right Column: Additional Info -->
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="15,0,0,0">
-                        <!-- Price -->
-                        <Border Background="#1a2a2e" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#5cd85a" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Price" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardPrice" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="24"
-                                          FontWeight="Bold"
-                                          Foreground="#5cd85a"
-                                          Margin="0"/>
-                            </StackPanel>
+                    <!-- Main Content Area with 3 columns -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="180"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*" MinWidth="180"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Column: Card Info -->
+                        <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,0,15,0">
+                            <!-- Card Number -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#ee1515" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Card Number" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardNumber" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="22"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Name -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#feca57" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Name" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardName" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="18"
+                                              TextAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Rarity -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#ff6b6b" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Rarity" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardRarity" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="18"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Copies Count -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,0" BorderBrush="#5cd85a" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Copies Owned" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardCopies" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="26"
+                                              FontWeight="Bold"
+                                              Foreground="#5cd85a"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Center Column: Card Image -->
+                        <Border Grid.Column="1" 
+                                Background="#0a0a0f" 
+                                CornerRadius="15" 
+                                BorderBrush="{StaticResource PokemonGradient}" 
+                                BorderThickness="4"
+                                Padding="12"
+                                VerticalAlignment="Top"
+                                Margin="15,0">
+                            <Image Name="CardImage" 
+                                   Width="300" 
+                                   Height="415" 
+                                   Stretch="Uniform"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center">
+                                <Image.Triggers>
+                                    <EventTrigger RoutedEvent="Image.Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                               From="0" To="1" Duration="0:0:0.4">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <QuadraticEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Image.Triggers>
+                            </Image>
                         </Border>
 
-                        <!-- Copies Management -->
-                        <Border Background="#1a2a2e" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#e74c3c" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Manage Copies" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                
-                                <!-- Remove Copy Button -->
-                                <Button Content="➖ Remove Copy" 
-                                        Style="{StaticResource PokemonButton}"
-                                        Click="RemoveCopy_Click"
-                                        Background="#e74c3c"
-                                        FontSize="14"
-                                        Padding="10,8"
-                                        Margin="0,5,0,0"
-                                        HorizontalAlignment="Stretch"/>
-                            </StackPanel>
-                        </Border>
+                        <!-- Right Column: Additional Info -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="15,0,0,0">
+                            <!-- Price -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#5cd85a" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Price" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardPrice" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="22"
+                                              FontWeight="Bold"
+                                              Foreground="#5cd85a"/>
+                                </StackPanel>
+                            </Border>
 
-                        <!-- Pull Date -->
-                        <Border Background="#1a2a2e" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#3498db" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Pull Date" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="PullDate" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="16"
-                                          Margin="0"/>
-                            </StackPanel>
-                        </Border>
+                            <!-- Copies Management -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#e74c3c" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Manage Copies" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                    
+                                    <!-- Remove Copy Button -->
+                                    <Button Content="➖ Remove Copy" 
+                                            Style="{StaticResource PokemonButton}"
+                                            Click="RemoveCopy_Click"
+                                            Background="#e74c3c"
+                                            FontSize="14"
+                                            Padding="12,10"
+                                            HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                            </Border>
 
-                        <!-- Edition -->
-                        <Border Background="#1a2a2e" Padding="15" 
-                                CornerRadius="8" Margin="0,10" BorderBrush="#9b59b6" BorderThickness="2">
-                            <StackPanel>
-                                <TextBlock Text="Edition" Style="{StaticResource GlowText}" 
-                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="N/A" Name="CardEdition" 
-                                          Style="{StaticResource ValueText}"
-                                          HorizontalAlignment="Center"
-                                          FontSize="16"
-                                          Margin="0"
-                                          TextAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                            <!-- Pull Date -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,15" BorderBrush="#3498db" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Pull Date" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="PullDate" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="15"
+                                              TextAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Edition -->
+                            <Border Background="#1a2a38" Padding="18,15" 
+                                    CornerRadius="10" Margin="0,0,0,0" BorderBrush="#9b59b6" BorderThickness="2">
+                                <StackPanel>
+                                    <TextBlock Text="Edition" Style="{StaticResource GlowText}" 
+                                              HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="N/A" Name="CardEdition" 
+                                              Style="{StaticResource ValueText}"
+                                              HorizontalAlignment="Center"
+                                              FontSize="15"
+                                              TextAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
-            </Grid>
+            </ScrollViewer>
         </Border>
     </Grid>
 </Window>

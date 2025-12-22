@@ -93,7 +93,9 @@ namespace WpfApp1
                 Duration = TimeSpan.FromMilliseconds(150)
             };
             
+            // Fade out both the card display panel and the card list
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeOut);
+            CardListBox.BeginAnimation(OpacityProperty, fadeOut);
             await Task.Delay(150);
 
             var fadeIn = new DoubleAnimation
@@ -103,7 +105,9 @@ namespace WpfApp1
                 Duration = TimeSpan.FromMilliseconds(200)
             };
             
+            // Fade in both the card display panel and the card list
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeIn);
+            CardListBox.BeginAnimation(OpacityProperty, fadeIn);
         }
 
         private async Task LoadCardsForEditionAsync(string editionType)
@@ -231,38 +235,71 @@ namespace WpfApp1
                 
                 if (dialog.ShowDialog() == true)
                 {
-                    // Temporarily disable selection changed to prevent animation conflicts
-                    isAnimating = true;
-                    
-                    await LoadCardsForEditionAsync(selectedEdition);
-                    
-                    if (dialog.NewCardId.HasValue && CardListBox.ItemsSource is List<Card> cards)
+                    if (dialog.NewCardId.HasValue)
                     {
-                        var newCard = cards.FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
-                        if (newCard != null)
+                        // Don't reload everything - just update the specific card
+                        isAnimating = true;
+                        
+                        if (CardListBox.ItemsSource is List<Card> cards)
                         {
-                            // First, clear the display to avoid showing old card
-                            ClearCardDetails();
+                            var existingCard = cards.FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
                             
-                            // Small delay to ensure UI updates
-                            await Task.Delay(50);
-                            
-                            // Now select the new card
-                            CardListBox.SelectedItem = newCard;
-                            CardListBox.ScrollIntoView(newCard);
-                            
-                            // Manually trigger display with animation
-                            isAnimating = false;
-                            await AnimateNewCardDisplay(newCard);
+                            if (existingCard != null)
+                            {
+                                // Card already exists - just update the copy count
+                                using (var conn = new MySqlConnection(connStr))
+                                {
+                                    var updatedCard = conn.QueryFirstOrDefault<Card>(
+                                        @"SELECT id as Id, number as Number, name as Name, 
+                                          rarity as Rarity, price as Price, image as Image, 
+                                          pull_date as PullDate, edition_id as EditionId, copies as Copies
+                                          FROM cards WHERE id = @Id",
+                                    new { Id = dialog.NewCardId.Value });
+                                    
+                                    if (updatedCard != null)
+                                    {
+                                        // Update the object in the list
+                                        existingCard.Copies = updatedCard.Copies;
+                                        
+                                        // Refresh display if this card is currently selected
+                                        if (CardListBox.SelectedItem is Card currentCard && currentCard.Id == updatedCard.Id)
+                                        {
+                                            CardCopies.Text = updatedCard.Copies.ToString();
+                                        }
+                                        
+                                        // Refresh the list display to show updated count
+                                        CardListBox.Items.Refresh();
+                                    }
+                                }
+                                
+                                isAnimating = false;
+                            }
+                            else
+                            {
+                                // New card added - reload the list
+                                await LoadCardsForEditionAsync(selectedEdition);
+                                
+                                var newCard = ((List<Card>)CardListBox.ItemsSource).FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
+                                if (newCard != null)
+                                {
+                                    ClearCardDetails();
+                                    await Task.Delay(50);
+                                    
+                                    CardListBox.SelectedItem = newCard;
+                                    CardListBox.ScrollIntoView(newCard);
+                                    
+                                    isAnimating = false;
+                                    await AnimateNewCardDisplay(newCard);
+                                    return;
+                                }
+                                
+                                isAnimating = false;
+                            }
                         }
                         else
                         {
                             isAnimating = false;
                         }
-                    }
-                    else
-                    {
-                        isAnimating = false;
                     }
                 }
             }
@@ -529,5 +566,5 @@ namespace WpfApp1
                 }
             }
         }
-    }
+        }
 }
