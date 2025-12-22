@@ -2,6 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
+using System.Windows.Media;
 using Dapper;
 using MySql.Data.MySqlClient;
 using System.Collections.Concurrent;
@@ -16,6 +18,7 @@ namespace WpfApp1
         public int EditionId { get; set; }
         public string Rarity { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public int Copies { get; set; } // Added Copies field
         public string? Image { get; set; }
         public DateTime? PullDate { get; set; }
     }
@@ -23,8 +26,9 @@ namespace WpfApp1
     public partial class MainWindow : Window
     {
         private string connStr;
-        private Dictionary<string, (int Id, string Identifier)> editionMap; // Changed to tuple
+        private Dictionary<string, (int Id, string Identifier)> editionMap;
         private ConcurrentDictionary<string, BitmapImage> imageCache;
+        private bool isAnimating = false;
 
         public MainWindow ()
         {
@@ -33,6 +37,10 @@ namespace WpfApp1
             imageCache = new ConcurrentDictionary<string, BitmapImage>();
 
             InitializeComponent();
+            
+            // Initialize RenderTransform for animations
+            DisplayArea.RenderTransform = new TranslateTransform();
+            
             LoadEditions();
         }
 
@@ -40,7 +48,6 @@ namespace WpfApp1
         {
             using (var conn = new MySqlConnection(connStr))
             {
-                // Query updated to include edition_identifier
                 var editions = conn.Query<(int Id, string Type, string EditionIdentifier)>(
                     "SELECT id, type, edition_identifier FROM card_editions").ToList();
 
@@ -66,8 +73,37 @@ namespace WpfApp1
         {
             if (EditionSelector.SelectedItem is string selectedEdition)
             {
+                // First, clear the current card details immediately
+                ClearCardDetails();
+                
+                // Fade out the panel
+                await AnimateEditionChange();
+                
+                // Load new cards while panel is fading back in
                 await LoadCardsForEditionAsync(selectedEdition);
             }
+        }
+
+        private async Task AnimateEditionChange()
+        {
+            var fadeOut = new DoubleAnimation
+            {
+                From = 1,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(150)
+            };
+            
+            CardDisplayPanel.BeginAnimation(OpacityProperty, fadeOut);
+            await Task.Delay(150);
+
+            var fadeIn = new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(200)
+            };
+            
+            CardDisplayPanel.BeginAnimation(OpacityProperty, fadeIn);
         }
 
         private async Task LoadCardsForEditionAsync(string editionType)
@@ -75,14 +111,15 @@ namespace WpfApp1
             if (!editionMap.ContainsKey(editionType))
                 return;
 
-            int editionId = editionMap[editionType].Id; // Access Id from tuple
+            int editionId = editionMap[editionType].Id;
 
             List<Card> cards;
             using (var conn = new MySqlConnection(connStr))
             {
                 string sql = @"SELECT id as Id, number as Number, name as Name, 
                               rarity as Rarity, price as Price, image as Image, 
-                              pull_date as PullDate, edition_id as EditionId 
+                              pull_date as PullDate, edition_id as EditionId,
+                              copies as Copies
                               FROM cards WHERE edition_id = @EditionId 
                               ORDER BY price DESC";
 
@@ -91,23 +128,30 @@ namespace WpfApp1
 
             CardListBox.ItemsSource = cards;
             
-            // Select the first card if available
+            isAnimating = true;
+            
             if (cards.Count > 0)
             {
                 CardListBox.SelectedIndex = 0;
+                await Task.Delay(50);
+                
+                if (CardListBox.SelectedItem is Card firstCard)
+                {
+                    DisplayCardDetails(firstCard);
+                }
             }
             else
             {
                 ClearCardDetails();
             }
+            
+            isAnimating = false;
 
-            // Preload all images for this edition in the background
             await PreloadImagesAsync(cards);
         }
 
         private async Task PreloadImagesAsync(List<Card> cards)
         {
-            // Get unique image URLs that aren't already cached
             var imagesToLoad = cards
                 .Where(c => !string.IsNullOrEmpty(c.Image) && !imageCache.ContainsKey(c.Image))
                 .Select(c => c.Image!)
@@ -119,7 +163,6 @@ namespace WpfApp1
 
             System.Diagnostics.Debug.WriteLine($"Preloading {imagesToLoad.Count} images...");
 
-            // Load images in parallel (max 5 at a time to avoid overwhelming the connection)
             var tasks = imagesToLoad.Select(async imageUrl =>
             {
                 try
@@ -136,10 +179,8 @@ namespace WpfApp1
                 }
             });
 
-            // Process 5 images at a time
             await Task.WhenAll(tasks.Take(5));
             
-            // Then process the rest
             if (imagesToLoad.Count > 5)
             {
                 await Task.WhenAll(tasks.Skip(5));
@@ -152,7 +193,6 @@ namespace WpfApp1
         {
             try
             {
-                // Download image data on background thread
                 byte[]? imageData = await Task.Run(async () =>
                 {
                     using var client = new System.Net.Http.HttpClient();
@@ -162,7 +202,6 @@ namespace WpfApp1
                 if (imageData == null)
                     return null;
 
-                // Create BitmapImage on UI thread
                 return await Dispatcher.InvokeAsync(() =>
                 {
                     var bitmap = new BitmapImage();
@@ -170,9 +209,9 @@ namespace WpfApp1
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                     bitmap.StreamSource = new System.IO.MemoryStream(imageData);
-                    bitmap.DecodePixelWidth = 436; // Decode to display size
+                    bitmap.DecodePixelWidth = 436;
                     bitmap.EndInit();
-                    bitmap.Freeze(); // Make thread-safe
+                    bitmap.Freeze();
                     return bitmap;
                 });
             }
@@ -183,63 +222,197 @@ namespace WpfApp1
             }
         }
 
-        private void CardListBox_SelectionChanged (object sender, SelectionChangedEventArgs e)
+        private async void AddCard_Click(object sender, RoutedEventArgs e)
         {
-            if (CardListBox.SelectedItem is Card selectedCard)
+            if (EditionSelector.SelectedItem is string selectedEdition)
             {
-                DisplayCardDetails(selectedCard);
+                var editionData = editionMap[selectedEdition];
+                var dialog = new AddCardDialog(editionData.Id, editionData.Identifier, connStr);
+                
+                if (dialog.ShowDialog() == true)
+                {
+                    // Temporarily disable selection changed to prevent animation conflicts
+                    isAnimating = true;
+                    
+                    await LoadCardsForEditionAsync(selectedEdition);
+                    
+                    if (dialog.NewCardId.HasValue && CardListBox.ItemsSource is List<Card> cards)
+                    {
+                        var newCard = cards.FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
+                        if (newCard != null)
+                        {
+                            // First, clear the display to avoid showing old card
+                            ClearCardDetails();
+                            
+                            // Small delay to ensure UI updates
+                            await Task.Delay(50);
+                            
+                            // Now select the new card
+                            CardListBox.SelectedItem = newCard;
+                            CardListBox.ScrollIntoView(newCard);
+                            
+                            // Manually trigger display with animation
+                            isAnimating = false;
+                            await AnimateNewCardDisplay(newCard);
+                        }
+                        else
+                        {
+                            isAnimating = false;
+                        }
+                    }
+                    else
+                    {
+                        isAnimating = false;
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select an edition first.", "No Edition Selected",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
-        private async void DisplayCardDetails(Card card)
+        private async Task AnimateNewCardDisplay(Card card)
+        {
+            // Ensure we start from invisible state
+            DisplayArea.Opacity = 0;
+            
+            // Update content while invisible
+            DisplayCardDetails(card);
+            
+            // Small delay to ensure content is rendered
+            await Task.Delay(50);
+            
+            // Slide in and fade in NEW content
+            var slideIn = new DoubleAnimation
+            {
+                From = 30,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            
+            var fadeIn = new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(300)
+            };
+            
+            DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+            DisplayArea.BeginAnimation(OpacityProperty, fadeIn);
+            
+            await Task.Delay(300);
+        }
+
+        private async void CardListBox_SelectionChanged (object sender, SelectionChangedEventArgs e)
+        {
+            if (CardListBox.SelectedItem is Card selectedCard && !isAnimating)
+            {
+                isAnimating = true;
+                
+                // Slide out and fade out OLD content
+                var slideOut = new DoubleAnimation
+                {
+                    From = 0,
+                    To = -30,
+                    Duration = TimeSpan.FromMilliseconds(150)
+                };
+                
+                var fadeOut = new DoubleAnimation
+                {
+                    From = 1,
+                    To = 0,
+                    Duration = TimeSpan.FromMilliseconds(150)
+                };
+                
+                DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
+                DisplayArea.BeginAnimation(OpacityProperty, fadeOut);
+                
+                // Wait for animation to complete before updating content
+                await Task.Delay(150);
+                
+                // NOW update the content (while it's invisible)
+                DisplayCardDetails(selectedCard);
+                
+                // Small delay to ensure content is updated
+                await Task.Delay(50);
+                
+                // Slide in and fade in NEW content
+                var slideIn = new DoubleAnimation
+                {
+                    From = 30,
+                    To = 0,
+                    Duration = TimeSpan.FromMilliseconds(200),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                
+                var fadeIn = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 1,
+                    Duration = TimeSpan.FromMilliseconds(200)
+                };
+                
+                DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+                DisplayArea.BeginAnimation(OpacityProperty, fadeIn);
+                
+                await Task.Delay(200);
+                isAnimating = false;
+            }
+        }
+
+        private void DisplayCardDetails(Card card)
         {
             CardNumber.Text = card.Number.ToString();
             CardName.Text = card.Name;
             CardRarity.Text = card.Rarity;
             CardPrice.Text = $"${card.Price:F2}";
-            
-            // Updated to include time (hour)
             PullDate.Text = card.PullDate?.ToString("yyyy-MM-dd HH:mm") ?? "N/A";
 
-            // Set edition name
             var editionName = editionMap.FirstOrDefault(x => x.Value.Id == card.EditionId).Key ?? "Unknown";
             CardEdition.Text = editionName;
 
-            // Load image from cache or download
+            // Load image synchronously if cached
             if (!string.IsNullOrEmpty(card.Image))
             {
-                try
+                if (imageCache.TryGetValue(card.Image, out var cachedImage))
                 {
-                    // Check cache first
-                    if (imageCache.TryGetValue(card.Image, out var cachedImage))
-                    {
-                        CardImage.Source = cachedImage;
-                        System.Diagnostics.Debug.WriteLine("Image loaded from cache!");
-                    }
-                    else
-                    {
-                        // Not in cache, load and cache it
-                        System.Diagnostics.Debug.WriteLine("Image not in cache, loading...");
-                        var bitmap = await LoadImageAsync(card.Image);
-                        if (bitmap != null)
-                        {
-                            imageCache.TryAdd(card.Image, bitmap);
-                            CardImage.Source = bitmap;
-                        }
-                        else
-                        {
-                            CardImage.Source = null;
-                        }
-                    }
+                    CardImage.Source = cachedImage;
+                    System.Diagnostics.Debug.WriteLine("Image loaded from cache!");
                 }
-                catch (Exception ex)
+                else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Image loading error: {ex.Message}");
-                    CardImage.Source = null;
+                    // Start async load but don't wait
+                    _ = LoadAndDisplayImageAsync(card.Image);
                 }
             }
             else
             {
+                CardImage.Source = null;
+            }
+        }
+
+        private async Task LoadAndDisplayImageAsync(string imageUrl)
+        {
+            System.Diagnostics.Debug.WriteLine("Image not in cache, loading...");
+            try
+            {
+                var bitmap = await LoadImageAsync(imageUrl);
+                if (bitmap != null)
+                {
+                    imageCache.TryAdd(imageUrl, bitmap);
+                    CardImage.Source = bitmap;
+                }
+                else
+                {
+                    CardImage.Source = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Image loading error: {ex.Message}");
                 CardImage.Source = null;
             }
         }
@@ -255,34 +428,18 @@ namespace WpfApp1
             CardImage.Source = null;
         }
 
-        private async void AddCard_Click(object sender, RoutedEventArgs e)
+        private async void AddEdition_Click(object sender, RoutedEventArgs e)
         {
-            if (EditionSelector.SelectedItem is string selectedEdition)
+            var dialog = new AddEditionDialog(connStr);
+            
+            if (dialog.ShowDialog() == true)
             {
-                var editionData = editionMap[selectedEdition];
-                var dialog = new AddCardDialog(editionData.Id, editionData.Identifier, connStr);
+                LoadEditions();
                 
-                if (dialog.ShowDialog() == true)
+                if (EditionSelector.Items.Count > 0)
                 {
-                    // Refresh the card list
-                    await LoadCardsForEditionAsync(selectedEdition);
-                    
-                    // Select the newly added card
-                    if (dialog.NewCardId.HasValue && CardListBox.ItemsSource is List<Card> cards)
-                    {
-                        var newCard = cards.FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
-                        if (newCard != null)
-                        {
-                            CardListBox.SelectedItem = newCard;
-                            CardListBox.ScrollIntoView(newCard);
-                        }
-                    }
+                    EditionSelector.SelectedIndex = EditionSelector.Items.Count - 1;
                 }
-            }
-            else
-            {
-                MessageBox.Show("Please select an edition first.", "No Edition Selected",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -306,44 +463,21 @@ namespace WpfApp1
                             conn.Execute(sql, new { Id = card.Id });
                         }
 
-                        // Remove from cache if exists
                         if (!string.IsNullOrEmpty(card.Image))
                         {
                             imageCache.TryRemove(card.Image, out _);
                         }
 
-                        // Refresh the card list
                         if (EditionSelector.SelectedItem is string selectedEdition)
                         {
                             await LoadCardsForEditionAsync(selectedEdition);
                         }
-
-                        MessageBox.Show($"'{card.Name}' has been deleted.", "Success",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show($"Error deleting card: {ex.Message}", "Error",
                             MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                }
-            }
-        }
-
-        private void AddEdition_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new AddEditionDialog(connStr);
-            
-            if (dialog.ShowDialog() == true)
-            {
-                // Reload editions
-                LoadEditions();
-                
-                // The new edition will be automatically selected if it's the first one
-                // Or you can select the last one (newly added)
-                if (EditionSelector.Items.Count > 0)
-                {
-                    EditionSelector.SelectedIndex = EditionSelector.Items.Count - 1;
                 }
             }
         }

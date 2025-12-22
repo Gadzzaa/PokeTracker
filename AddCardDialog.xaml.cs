@@ -54,12 +54,10 @@ namespace WpfApp1
 
             try
             {
-                // Build full card ID: edition_identifier-cardNumber (e.g., "sv07-123")
                 string fullCardId = $"{editionIdentifier}-{cardNumber}";
                 
                 StatusText.Text = $"Fetching {fullCardId}...";
 
-                // Fetch card data from API
                 var cardData = await apiService.GetCardByNumberAsync(fullCardId);
                 
                 if (cardData == null)
@@ -73,7 +71,6 @@ namespace WpfApp1
 
                 StatusText.Text = $"Found: {cardData.Name} - Adding to database...";
 
-                // Parse numeric part for storage
                 int numericCardNumber;
                 if (!int.TryParse(cardNumber, out numericCardNumber))
                 {
@@ -83,30 +80,36 @@ namespace WpfApp1
                 // Check if card already exists
                 using (var conn = new MySqlConnection(connStr))
                 {
-                    var existing = conn.QueryFirstOrDefault<int?>(
-                        "SELECT id FROM cards WHERE number = @Number AND edition_id = @EditionId",
+                    var existing = conn.QueryFirstOrDefault<(int Id, int Copies)?>(
+                        "SELECT id, copies FROM cards WHERE number = @Number AND edition_id = @EditionId",
                         new { Number = numericCardNumber, EditionId = editionId });
 
                     if (existing.HasValue)
                     {
-                        var result = MessageBox.Show(
-                            $"Card #{cardNumber} already exists in this edition.\n\nDo you want to add it again?",
-                            "Duplicate Card",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
+                        // Card exists - increment copies
+                        string updateSql = "UPDATE cards SET copies = copies + 1 WHERE id = @Id";
+                        conn.Execute(updateSql, new { Id = existing.Value.Id });
+                        
+                        StatusText.Text = "Card copy added successfully!";
+                        await Task.Delay(500);
 
-                        if (result == MessageBoxResult.No)
-                        {
-                            return;
-                        }
+                        MessageBox.Show($"Added another copy of '{cardData.Name}'!\n\nTotal copies: {existing.Value.Copies + 1}",
+                            "Copy Added",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+
+                        NewCardId = existing.Value.Id; // Return existing card ID
+                        DialogResult = true;
+                        Close();
+                        return;
                     }
                 }
 
-                // Insert card into database and get the new ID
+                // Card doesn't exist - insert new with copies = 1
                 using (var conn = new MySqlConnection(connStr))
                 {
-                    string sql = @"INSERT INTO cards (number, name, rarity, price, image, pull_date, edition_id) 
-                                   VALUES (@Number, @Name, @Rarity, @Price, @Image, @PullDate, @EditionId);
+                    string sql = @"INSERT INTO cards (number, name, rarity, price, image, pull_date, edition_id, copies) 
+                                   VALUES (@Number, @Name, @Rarity, @Price, @Image, @PullDate, @EditionId, 1);
                                    SELECT LAST_INSERT_ID();";
 
                     var card = new
@@ -120,7 +123,6 @@ namespace WpfApp1
                         EditionId = editionId
                     };
 
-                    // Execute and get the new card ID
                     NewCardId = conn.ExecuteScalar<int>(sql, card);
                 }
 

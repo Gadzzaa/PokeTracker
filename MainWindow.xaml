@@ -23,6 +23,20 @@
             <GradientStop Color="#16213e" Offset="1"/>
         </LinearGradientBrush>
 
+        <!-- Fade In Animation -->
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                           From="0" To="1" Duration="0:0:0.3"/>
+        </Storyboard>
+
+        <!-- Scale Up Animation -->
+        <Storyboard x:Key="ScaleUpAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                           From="0.95" To="1" Duration="0:0:0.2"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                           From="0.95" To="1" Duration="0:0:0.2"/>
+        </Storyboard>
+
         <!-- Hover Effect for ListBox Items -->
         <Style x:Key="PokemonListBoxItem" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
@@ -49,6 +63,30 @@
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                           To="1.02" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                           To="1.02" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                           To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="ItemBorder"
+                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                           To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
@@ -60,6 +98,12 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         </Style>
 
         <!-- Glow Text Style -->
@@ -76,7 +120,7 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
 
-        <!-- Button Style -->
+        <!-- Enhanced Button Style with Animation -->
         <Style x:Key="PokemonButton" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource PokemonGradient}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -85,10 +129,17 @@
             <Setter Property="Padding" Value="20,10"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                </Setter.Value>
+            </Setter>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
                                 CornerRadius="8"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -98,11 +149,103 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Opacity" Value="0.8"/>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                               To="1.05" Duration="0:0:0.1"/>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                               To="1.05" Duration="0:0:0.1"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                               To="1" Duration="0:0:0.1"/>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                               To="1" Duration="0:0:0.1"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                               To="0.95" Duration="0:0:0.05"/>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                               To="0.95" Duration="0:0:0.05"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Delete Button Style -->
+        <Style x:Key="DeleteButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#ee1515"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <RotateTransform Angle="0"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="14">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#ff0000"/>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                               To="90" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                               To="0" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
+
+    <!-- Add entrance animation -->
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                   From="0" To="1" Duration="0:0:0.5"/>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
 
     <Grid Background="#1a1a2e">
         <Grid.ColumnDefinitions>
@@ -147,7 +290,7 @@
 
                 <!-- Add Edition Button -->
                 <Button Grid.Row="2" 
-                        Content="Add New Edition" 
+                        Content="➕ Add Edition" 
                         Style="{StaticResource PokemonButton}"
                         Click="AddEdition_Click"
                         Margin="10"/>
@@ -177,7 +320,7 @@
                                TextAlignment="Center"/>
                 </Border>
 
-                <!-- Card ListBox with Custom Template -->
+                <!-- Card ListBox -->
                 <ListBox Grid.Row="1" 
                          Name="CardListBox" 
                          Background="Transparent"
@@ -186,13 +329,7 @@
                          SelectionChanged="CardListBox_SelectionChanged"
                          Margin="5">
                     <ListBox.ItemContainerStyle>
-                        <Style TargetType="ListBoxItem">
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Foreground" Value="#feca57"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="5"/>
-                            <Setter Property="BorderBrush" Value="#feca57"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource PokemonListBoxItem}">
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
@@ -201,7 +338,11 @@
                                                 BorderBrush="{TemplateBinding BorderBrush}"
                                                 BorderThickness="{TemplateBinding BorderThickness}"
                                                 CornerRadius="8"
-                                                Padding="10,8">
+                                                Padding="{TemplateBinding Padding}"
+                                                RenderTransformOrigin="0.5,0.5">
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </Border.RenderTransform>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -212,42 +353,14 @@
                                                                  HorizontalAlignment="Left" 
                                                                  VerticalAlignment="Center"/>
                                                 
-                                                <!-- Delete Button -->
+                                                <!-- Delete Button with animation -->
                                                 <Button Grid.Column="1" 
                                                         Content="✕" 
-                                                        Width="28" 
-                                                        Height="28"
-                                                        FontSize="16"
-                                                        FontWeight="Bold"
-                                                        Foreground="White"
-                                                        Background="#ee1515"
-                                                        BorderThickness="0"
+                                                        Style="{StaticResource DeleteButtonStyle}"
                                                         VerticalAlignment="Center"
-                                                        Cursor="Hand"
                                                         Margin="5,0,0,0"
                                                         Click="DeleteCard_Click"
-                                                        Tag="{Binding}">
-                                                    <Button.Template>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}"
-                                                                    CornerRadius="14"
-                                                                    BorderThickness="0">
-                                                                <ContentPresenter HorizontalAlignment="Center" 
-                                                                                VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Button.Template>
-                                                    <Button.Style>
-                                                        <Style TargetType="Button">
-                                                            <Setter Property="Background" Value="#ee1515"/>
-                                                            <Style.Triggers>
-                                                                <Trigger Property="IsMouseOver" Value="True">
-                                                                    <Setter Property="Background" Value="#ff0000"/>
-                                                                </Trigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-                                                </Button>
+                                                        Tag="{Binding}"/>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
@@ -271,26 +384,38 @@
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Name}" 
-                                       FontSize="16" 
-                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Name}" 
+                                           FontSize="16" 
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text=" x" 
+                                           FontSize="14" 
+                                           Margin="5,0,0,0"
+                                           Foreground="#feca57"/>
+                                <TextBlock Text="{Binding Copies}" 
+                                           FontSize="14" 
+                                           FontWeight="Bold"
+                                           Foreground="#5cd85a"
+                                           Margin="0,0,5,0"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
 
                 <!-- Add Card Button -->
                 <Button Grid.Row="2" 
-                        Content="Add New Card" 
+                        Content="➕ Add New Card" 
                         Style="{StaticResource PokemonButton}"
                         Click="AddCard_Click"
                         Margin="10"/>
             </Grid>
         </Border>
 
-        <!-- Right Panel: Card Display Area -->
+        <!-- Right Panel: Card Display Area with fade animation -->
         <Border Grid.Column="2" Background="{StaticResource CardGradient}" 
                 CornerRadius="15" Margin="10"
-                BorderBrush="#feca57" BorderThickness="2">
+                BorderBrush="#feca57" BorderThickness="2"
+                Name="CardDisplayPanel">
 
             <Grid Name="DisplayArea" Margin="20">
                 <Grid.RowDefinitions>
@@ -320,7 +445,7 @@
                     <!-- Left Column: Card Info -->
                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
                         <!-- Card Number -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <Border Background="#1a2a38" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#ee1515" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Card Number" Style="{StaticResource GlowText}" 
@@ -334,7 +459,7 @@
                         </Border>
 
                         <!-- Name -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <Border Background="#1a2a38" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#feca57" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Name" Style="{StaticResource GlowText}" 
@@ -349,7 +474,7 @@
                         </Border>
 
                         <!-- Rarity -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <Border Background="#1a2a38" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#ff6b6b" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Rarity" Style="{StaticResource GlowText}" 
@@ -358,6 +483,22 @@
                                           Style="{StaticResource ValueText}"
                                           HorizontalAlignment="Center"
                                           FontSize="20"
+                                          Margin="0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Copies Count -->
+                        <Border Background="#1a2a2e" Padding="15" 
+                                CornerRadius="8" Margin="0,10" BorderBrush="#e74c3c" BorderThickness="2">
+                            <StackPanel>
+                                <TextBlock Text="Copies Owned" Style="{StaticResource GlowText}" 
+                                          HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="N/A" Name="CardCopies" 
+                                          Style="{StaticResource ValueText}"
+                                          HorizontalAlignment="Center"
+                                          FontSize="28"
+                                          FontWeight="Bold"
+                                          Foreground="#5cd85a"
                                           Margin="0"/>
                             </StackPanel>
                         </Border>
@@ -376,13 +517,24 @@
                                Height="400" 
                                Stretch="Uniform"
                                HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
+                               VerticalAlignment="Center">
+                            <Image.Triggers>
+                                <EventTrigger RoutedEvent="Image.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                           From="0" To="1" Duration="0:0:0.3"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Image.Triggers>
+                        </Image>
                     </Border>
 
                     <!-- Right Column: Additional Info -->
                     <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="15,0,0,0">
                         <!-- Price -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <Border Background="#1a2a2e" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#5cd85a" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Price" Style="{StaticResource GlowText}" 
@@ -398,7 +550,7 @@
                         </Border>
 
                         <!-- Pull Date -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <Border Background="#1a2a2e" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#3498db" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Pull Date" Style="{StaticResource GlowText}" 
@@ -406,13 +558,13 @@
                                 <TextBlock Text="N/A" Name="PullDate" 
                                           Style="{StaticResource ValueText}"
                                           HorizontalAlignment="Center"
-                                          FontSize="18"
+                                          FontSize="16"
                                           Margin="0"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Set Info Placeholder -->
-                        <Border Background="#1a1a2e" Padding="15" 
+                        <!-- Edition -->
+                        <Border Background="#1a2a2e" Padding="15" 
                                 CornerRadius="8" Margin="0,10" BorderBrush="#9b59b6" BorderThickness="2">
                             <StackPanel>
                                 <TextBlock Text="Edition" Style="{StaticResource GlowText}" 
