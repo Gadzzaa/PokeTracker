@@ -41,10 +41,14 @@ git clone https://github.com/yourusername/pokemon-card-collection.git cd pokemon
      ```
 
 3. **Build the application**
-dotnet build
+   ```bash
+   dotnet build
+   ```
 
-4. **Run the application**
-dotnet run
+5. **Run the application**
+   ```bash
+   dotnet run
+   ```
 
 
 ## ⚙️ Configuration
