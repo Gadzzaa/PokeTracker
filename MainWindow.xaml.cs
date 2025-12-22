@@ -88,7 +88,6 @@ namespace WpfApp1
             // Clear image cache to free memory
             ClearImageCache();
             
-            System.Diagnostics.Debug.WriteLine("Application closed - image cache cleared");
         }
 
         private void ClearImageCache()
@@ -116,7 +115,6 @@ namespace WpfApp1
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine($"Trimming cache - Current: {imageCache.Count} items, {currentCacheSize / 1024 / 1024}MB");
 
             // Get currently visible card images to keep them
             HashSet<string> protectedUrls = new HashSet<string>();
@@ -152,7 +150,6 @@ namespace WpfApp1
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"Cache trimmed - Removed {removed} images. New: {imageCache.Count} items, {currentCacheSize / 1024 / 1024}MB");
 
             // Force garbage collection after significant cleanup
             if (removed > 10)
@@ -176,7 +173,6 @@ namespace WpfApp1
                                       COLLATE utf8mb4_general_ci;";
                     conn.Execute(createDbSql);
 
-                    System.Diagnostics.Debug.WriteLine($"Database '{dbConfig.Database}' ensured.");
                 }
 
                 using (var conn = new MySqlConnection(connStr))
@@ -193,7 +189,6 @@ namespace WpfApp1
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 
                     conn.Execute(createEditionsTableSql);
-                    System.Diagnostics.Debug.WriteLine("Table 'card_editions' ensured.");
 
                     string createCardsTableSql = @"
                         CREATE TABLE IF NOT EXISTS cards (
@@ -211,7 +206,6 @@ namespace WpfApp1
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
 
                     conn.Execute(createCardsTableSql);
-                    System.Diagnostics.Debug.WriteLine("Table 'cards' ensured.");
 
                     try
                     {
@@ -223,15 +217,12 @@ namespace WpfApp1
                             ON DELETE CASCADE;";
 
                         conn.Execute(addForeignKeySql);
-                        System.Diagnostics.Debug.WriteLine("Foreign key constraint added.");
                     }
                     catch
                     {
-                        System.Diagnostics.Debug.WriteLine("Foreign key constraint already exists or couldn't be added.");
                     }
                 }
 
-                System.Diagnostics.Debug.WriteLine("Database initialization completed successfully.");
                 return true;
             }
             catch (Exception ex)
@@ -241,7 +232,6 @@ namespace WpfApp1
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
 
-                System.Diagnostics.Debug.WriteLine($"Database initialization error: {ex.Message}");
                 return false;
             }
         }
@@ -390,7 +380,6 @@ namespace WpfApp1
             if (imagesToLoad.Count == 0)
                 return;
 
-            System.Diagnostics.Debug.WriteLine($"Preloading {imagesToLoad.Count} images...");
 
             var tasks = imagesToLoad.Select(async imageUrl =>
             {
@@ -406,9 +395,8 @@ namespace WpfApp1
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to cache image {imageUrl}: {ex.Message}");
                 }
             });
 
@@ -417,7 +405,6 @@ namespace WpfApp1
             // Trim cache if needed after preloading
             TrimCache();
 
-            System.Diagnostics.Debug.WriteLine($"Cache status: {imageCache.Count} images, {currentCacheSize / 1024 / 1024}MB");
         }
 
         private async Task<BitmapImage?> LoadImageAsync(string imageUrl)
@@ -447,9 +434,8 @@ namespace WpfApp1
                     return bitmap;
                 });
             }
-            catch (Exception ex)
+            catch 
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to load image: {ex.Message}");
                 return null;
             }
         }
@@ -647,7 +633,6 @@ namespace WpfApp1
                     // Update last accessed time
                     cachedImage.LastAccessed = DateTime.Now;
                     CardImage.Source = cachedImage.Image;
-                    System.Diagnostics.Debug.WriteLine("Image loaded from cache!");
                 }
                 else
                 {
@@ -664,7 +649,6 @@ namespace WpfApp1
 
         private async Task LoadAndDisplayImageAsync(string imageUrl)
         {
-            System.Diagnostics.Debug.WriteLine("Image not in cache, loading...");
             try
             {
                 var bitmap = await LoadImageAsync(imageUrl);
@@ -683,9 +667,8 @@ namespace WpfApp1
                     CardImage.Source = null;
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Image loading error: {ex.Message}");
                 CardImage.Source = null;
             }
         }
