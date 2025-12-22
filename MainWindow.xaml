@@ -239,6 +239,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
@@ -263,12 +264,20 @@
                          Margin="8,0,8,8">
                 </ListBox>
 
-                <!-- Add Edition Button -->
+                <!-- Database Settings Button -->
                 <Button Grid.Row="2" 
+                        Content="⚙️ Database Settings" 
+                        Style="{StaticResource PokemonButton}"
+                        Click="DatabaseSettings_Click"
+                        Margin="12,8,12,8"
+                        Background="#3498db"/>
+
+                <!-- Add Edition Button -->
+                <Button Grid.Row="3" 
                         Content="➕ Add Edition" 
                         Style="{StaticResource PokemonButton}"
                         Click="AddEdition_Click"
-                        Margin="12,8,12,12"/>
+                        Margin="12,0,12,12"/>
             </Grid>
         </Border>
 

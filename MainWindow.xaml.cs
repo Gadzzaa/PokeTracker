@@ -10,6 +10,22 @@ using System.Collections.Concurrent;
 
 namespace WpfApp1
 {
+    // Image cache entry to track usage
+    public class CachedImage
+    {
+        public BitmapImage Image { get; set; }
+        public DateTime LastAccessed { get; set; }
+        public long EstimatedSize { get; set; }
+
+        public CachedImage(BitmapImage image)
+        {
+            Image = image;
+            LastAccessed = DateTime.Now;
+            // Rough estimate: width * height * 4 bytes per pixel
+            EstimatedSize = image.PixelWidth * image.PixelHeight * 4;
+        }
+    }
+
     public class Card
     {
         public int Id { get; set; }
@@ -26,15 +42,24 @@ namespace WpfApp1
     public partial class MainWindow : Window
     {
         private string connStr;
+        private DatabaseConfig dbConfig;
         private Dictionary<string, (int Id, string Identifier)> editionMap;
-        private ConcurrentDictionary<string, BitmapImage> imageCache;
+        private ConcurrentDictionary<string, CachedImage> imageCache;
         private bool isAnimating = false;
+
+        // Cache configuration
+        private const int MAX_CACHE_SIZE_MB = 200; // Maximum 200MB of cached images
+        private const int MAX_CACHE_ITEMS = 100; // Maximum 100 images
+        private long currentCacheSize = 0;
 
         public MainWindow ()
         {
-            connStr = "server=localhost;user=root;database=pokemon_2025;port=3306;";
+            // Load database configuration
+            dbConfig = DatabaseConfig.Load();
+            connStr = dbConfig.GetConnectionString();
+            
             editionMap = new Dictionary<string, (int Id, string Identifier)>();
-            imageCache = new ConcurrentDictionary<string, BitmapImage>();
+            imageCache = new ConcurrentDictionary<string, CachedImage>();
 
             InitializeComponent();
 
@@ -42,37 +67,117 @@ namespace WpfApp1
             DisplayArea.RenderTransform = new TranslateTransform();
 
             // Initialize database
-            InitializeDatabase();
+            if (!InitializeDatabase())
+            {
+                ShowDatabaseSettingsDialog();
+            }
 
             LoadEditions();
         }
 
-        private void InitializeDatabase ()
+        // Clean up resources when window closes
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            
+            // Clear image cache to free memory
+            ClearImageCache();
+            
+            System.Diagnostics.Debug.WriteLine("Application closed - image cache cleared");
+        }
+
+        private void ClearImageCache()
+        {
+            foreach (var entry in imageCache.Values)
+            {
+                entry.Image.StreamSource?.Dispose();
+            }
+            imageCache.Clear();
+            currentCacheSize = 0;
+            
+            // Force garbage collection
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        private void TrimCache()
+        {
+            // Check if we need to trim
+            long maxSize = MAX_CACHE_SIZE_MB * 1024 * 1024;
+            
+            if (imageCache.Count <= MAX_CACHE_ITEMS && currentCacheSize <= maxSize)
+            {
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"Trimming cache - Current: {imageCache.Count} items, {currentCacheSize / 1024 / 1024}MB");
+
+            // Get currently visible card images to keep them
+            HashSet<string> protectedUrls = new HashSet<string>();
+            if (CardListBox.ItemsSource is List<Card> cards)
+            {
+                // Protect images for visible cards (current edition)
+                foreach (var card in cards.Where(c => !string.IsNullOrEmpty(c.Image)))
+                {
+                    protectedUrls.Add(card.Image!);
+                }
+            }
+
+            // Sort by last accessed time (oldest first)
+            var sortedEntries = imageCache
+                .Where(kvp => !protectedUrls.Contains(kvp.Key))
+                .OrderBy(kvp => kvp.Value.LastAccessed)
+                .ToList();
+
+            // Remove oldest entries until we're under limits
+            int removed = 0;
+            foreach (var entry in sortedEntries)
+            {
+                if (imageCache.Count <= MAX_CACHE_ITEMS / 2 && currentCacheSize <= maxSize / 2)
+                {
+                    break; // Stop when we're at 50% capacity
+                }
+
+                if (imageCache.TryRemove(entry.Key, out var cached))
+                {
+                    cached.Image.StreamSource?.Dispose();
+                    currentCacheSize -= cached.EstimatedSize;
+                    removed++;
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine($"Cache trimmed - Removed {removed} images. New: {imageCache.Count} items, {currentCacheSize / 1024 / 1024}MB");
+
+            // Force garbage collection after significant cleanup
+            if (removed > 10)
+            {
+                GC.Collect();
+            }
+        }
+
+        private bool InitializeDatabase()
         {
             try
             {
-                // Connection string without database to create it if needed
-                string connStrWithoutDb = "server=localhost;user=root;port=3306;";
+                string connStrWithoutDb = dbConfig.GetConnectionStringWithoutDb();
 
                 using (var conn = new MySqlConnection(connStrWithoutDb))
                 {
                     conn.Open();
 
-                    // Create database if it doesn't exist
-                    string createDbSql = @"CREATE DATABASE IF NOT EXISTS pokemon_2025 
-                                          CHARACTER SET utf8mb4 
-                                          COLLATE utf8mb4_general_ci;";
+                    string createDbSql = @"CREATE DATABASE IF NOT EXISTS " + dbConfig.Database + @" 
+                                      CHARACTER SET utf8mb4 
+                                      COLLATE utf8mb4_general_ci;";
                     conn.Execute(createDbSql);
 
-                    System.Diagnostics.Debug.WriteLine("Database 'pokemon_2025' ensured.");
+                    System.Diagnostics.Debug.WriteLine($"Database '{dbConfig.Database}' ensured.");
                 }
 
-                // Now connect to the database and create tables
                 using (var conn = new MySqlConnection(connStr))
                 {
                     conn.Open();
 
-                    // Create card_editions table
                     string createEditionsTableSql = @"
                         CREATE TABLE IF NOT EXISTS card_editions (
                             id INT(11) NOT NULL AUTO_INCREMENT,
@@ -85,7 +190,6 @@ namespace WpfApp1
                     conn.Execute(createEditionsTableSql);
                     System.Diagnostics.Debug.WriteLine("Table 'card_editions' ensured.");
 
-                    // Create cards table
                     string createCardsTableSql = @"
                         CREATE TABLE IF NOT EXISTS cards (
                             id INT(11) NOT NULL AUTO_INCREMENT,
@@ -104,36 +208,61 @@ namespace WpfApp1
                     conn.Execute(createCardsTableSql);
                     System.Diagnostics.Debug.WriteLine("Table 'cards' ensured.");
 
-                    // Optionally add foreign key constraint if not exists
-                    string addForeignKeySql = @"
-                        ALTER TABLE cards 
-                        ADD CONSTRAINT fk_edition 
-                        FOREIGN KEY (edition_id) 
-                        REFERENCES card_editions(id) 
-                        ON DELETE CASCADE;";
-
                     try
                     {
+                        string addForeignKeySql = @"
+                            ALTER TABLE cards 
+                            ADD CONSTRAINT fk_edition 
+                            FOREIGN KEY (edition_id) 
+                            REFERENCES card_editions(id) 
+                            ON DELETE CASCADE;";
+
                         conn.Execute(addForeignKeySql);
                         System.Diagnostics.Debug.WriteLine("Foreign key constraint added.");
                     }
                     catch
                     {
-                        // Foreign key might already exist, ignore error
                         System.Diagnostics.Debug.WriteLine("Foreign key constraint already exists or couldn't be added.");
                     }
                 }
 
                 System.Diagnostics.Debug.WriteLine("Database initialization completed successfully.");
+                return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error initializing database: {ex.Message}\n\nPlease ensure MySQL is running and accessible.",
+                MessageBox.Show($"Error initializing database: {ex.Message}\n\nPlease configure database settings.",
                     "Database Initialization Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
 
                 System.Diagnostics.Debug.WriteLine($"Database initialization error: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void DatabaseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            ShowDatabaseSettingsDialog();
+        }
+
+        private void ShowDatabaseSettingsDialog()
+        {
+            var dialog = new DatabaseSettingsDialog(dbConfig);
+            if (dialog.ShowDialog() == true)
+            {
+                var result = MessageBox.Show(
+                    "Database settings have been updated.\n\nWould you like to restart the application now?",
+                    "Restart Required",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    System.Diagnostics.Process.Start(
+                        Environment.ProcessPath ?? Application.ResourceAssembly.Location);
+                    Application.Current.Shutdown();
+                }
             }
         }
 
@@ -166,13 +295,12 @@ namespace WpfApp1
         {
             if (EditionSelector.SelectedItem is string selectedEdition)
             {
-                // First, clear the current card details immediately
                 ClearCardDetails();
-                
-                // Fade out the panel
                 await AnimateEditionChange();
                 
-                // Load new cards while panel is fading back in
+                // Trim cache when switching editions
+                TrimCache();
+                
                 await LoadCardsForEditionAsync(selectedEdition);
             }
         }
@@ -186,7 +314,6 @@ namespace WpfApp1
                 Duration = TimeSpan.FromMilliseconds(150)
             };
             
-            // Fade out both the card display panel and the card list
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeOut);
             CardListBox.BeginAnimation(OpacityProperty, fadeOut);
             await Task.Delay(150);
@@ -198,7 +325,6 @@ namespace WpfApp1
                 Duration = TimeSpan.FromMilliseconds(200)
             };
             
-            // Fade in both the card display panel and the card list
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeIn);
             CardListBox.BeginAnimation(OpacityProperty, fadeIn);
         }
@@ -253,6 +379,7 @@ namespace WpfApp1
                 .Where(c => !string.IsNullOrEmpty(c.Image) && !imageCache.ContainsKey(c.Image))
                 .Select(c => c.Image!)
                 .Distinct()
+                .Take(10) // Only preload first 10 images
                 .ToList();
 
             if (imagesToLoad.Count == 0)
@@ -267,7 +394,11 @@ namespace WpfApp1
                     var bitmap = await LoadImageAsync(imageUrl);
                     if (bitmap != null)
                     {
-                        imageCache.TryAdd(imageUrl, bitmap);
+                        var cached = new CachedImage(bitmap);
+                        if (imageCache.TryAdd(imageUrl, cached))
+                        {
+                            currentCacheSize += cached.EstimatedSize;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -276,14 +407,12 @@ namespace WpfApp1
                 }
             });
 
-            await Task.WhenAll(tasks.Take(5));
+            await Task.WhenAll(tasks);
             
-            if (imagesToLoad.Count > 5)
-            {
-                await Task.WhenAll(tasks.Skip(5));
-            }
+            // Trim cache if needed after preloading
+            TrimCache();
 
-            System.Diagnostics.Debug.WriteLine($"Cached {imageCache.Count} total images");
+            System.Diagnostics.Debug.WriteLine($"Cache status: {imageCache.Count} images, {currentCacheSize / 1024 / 1024}MB");
         }
 
         private async Task<BitmapImage?> LoadImageAsync(string imageUrl)
@@ -293,6 +422,7 @@ namespace WpfApp1
                 byte[]? imageData = await Task.Run(async () =>
                 {
                     using var client = new System.Net.Http.HttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(10);
                     return await client.GetByteArrayAsync(imageUrl);
                 });
 
@@ -504,17 +634,18 @@ namespace WpfApp1
             var editionName = editionMap.FirstOrDefault(x => x.Value.Id == card.EditionId).Key ?? "Unknown";
             CardEdition.Text = editionName;
 
-            // Load image synchronously if cached
+            // Load image with cache management
             if (!string.IsNullOrEmpty(card.Image))
             {
                 if (imageCache.TryGetValue(card.Image, out var cachedImage))
                 {
-                    CardImage.Source = cachedImage;
+                    // Update last accessed time
+                    cachedImage.LastAccessed = DateTime.Now;
+                    CardImage.Source = cachedImage.Image;
                     System.Diagnostics.Debug.WriteLine("Image loaded from cache!");
                 }
                 else
                 {
-                    // Start async load but don't wait
                     _ = LoadAndDisplayImageAsync(card.Image);
                 }
             }
@@ -523,7 +654,7 @@ namespace WpfApp1
                 CardImage.Source = null;
             }
 
-            CardCopies.Text = card.Copies.ToString(); // Update copies text
+            CardCopies.Text = card.Copies.ToString();
         }
 
         private async Task LoadAndDisplayImageAsync(string imageUrl)
@@ -534,7 +665,12 @@ namespace WpfApp1
                 var bitmap = await LoadImageAsync(imageUrl);
                 if (bitmap != null)
                 {
-                    imageCache.TryAdd(imageUrl, bitmap);
+                    var cached = new CachedImage(bitmap);
+                    if (imageCache.TryAdd(imageUrl, cached))
+                    {
+                        currentCacheSize += cached.EstimatedSize;
+                        TrimCache(); // Check if we need to trim after adding
+                    }
                     CardImage.Source = bitmap;
                 }
                 else
