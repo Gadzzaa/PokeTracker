@@ -10,7 +10,7 @@ using System.Collections.Concurrent;
 
 namespace WpfApp1
 {
-   public class Card
+    public class Card
     {
         public int Id { get; set; }
         public int Number { get; set; }
@@ -18,11 +18,11 @@ namespace WpfApp1
         public int EditionId { get; set; }
         public string Rarity { get; set; } = string.Empty;
         public decimal Price { get; set; }
-        public int Copies { get; set; } // Added Copies field
+        public int Copies { get; set; }
         public string? Image { get; set; }
         public DateTime? PullDate { get; set; }
     }
-    
+
     public partial class MainWindow : Window
     {
         private string connStr;
@@ -37,11 +37,104 @@ namespace WpfApp1
             imageCache = new ConcurrentDictionary<string, BitmapImage>();
 
             InitializeComponent();
-            
+
             // Initialize RenderTransform for animations
             DisplayArea.RenderTransform = new TranslateTransform();
-            
+
+            // Initialize database
+            InitializeDatabase();
+
             LoadEditions();
+        }
+
+        private void InitializeDatabase ()
+        {
+            try
+            {
+                // Connection string without database to create it if needed
+                string connStrWithoutDb = "server=localhost;user=root;port=3306;";
+
+                using (var conn = new MySqlConnection(connStrWithoutDb))
+                {
+                    conn.Open();
+
+                    // Create database if it doesn't exist
+                    string createDbSql = @"CREATE DATABASE IF NOT EXISTS pokemon_2025 
+                                          CHARACTER SET utf8mb4 
+                                          COLLATE utf8mb4_general_ci;";
+                    conn.Execute(createDbSql);
+
+                    System.Diagnostics.Debug.WriteLine("Database 'pokemon_2025' ensured.");
+                }
+
+                // Now connect to the database and create tables
+                using (var conn = new MySqlConnection(connStr))
+                {
+                    conn.Open();
+
+                    // Create card_editions table
+                    string createEditionsTableSql = @"
+                        CREATE TABLE IF NOT EXISTS card_editions (
+                            id INT(11) NOT NULL AUTO_INCREMENT,
+                            type TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                            nr_pachete INT(11) NOT NULL DEFAULT 0,
+                            edition_identifier TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                            PRIMARY KEY (id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
+
+                    conn.Execute(createEditionsTableSql);
+                    System.Diagnostics.Debug.WriteLine("Table 'card_editions' ensured.");
+
+                    // Create cards table
+                    string createCardsTableSql = @"
+                        CREATE TABLE IF NOT EXISTS cards (
+                            id INT(11) NOT NULL AUTO_INCREMENT,
+                            number INT(11) NULL,
+                            name TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                            edition_id INT(11) NULL,
+                            rarity TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                            price DECIMAL(10,2) NULL,
+                            copies INT(11) NOT NULL DEFAULT 1,
+                            image TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                            pull_date DATETIME NULL,
+                            PRIMARY KEY (id),
+                            INDEX idx_edition_id (edition_id)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
+
+                    conn.Execute(createCardsTableSql);
+                    System.Diagnostics.Debug.WriteLine("Table 'cards' ensured.");
+
+                    // Optionally add foreign key constraint if not exists
+                    string addForeignKeySql = @"
+                        ALTER TABLE cards 
+                        ADD CONSTRAINT fk_edition 
+                        FOREIGN KEY (edition_id) 
+                        REFERENCES card_editions(id) 
+                        ON DELETE CASCADE;";
+
+                    try
+                    {
+                        conn.Execute(addForeignKeySql);
+                        System.Diagnostics.Debug.WriteLine("Foreign key constraint added.");
+                    }
+                    catch
+                    {
+                        // Foreign key might already exist, ignore error
+                        System.Diagnostics.Debug.WriteLine("Foreign key constraint already exists or couldn't be added.");
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("Database initialization completed successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error initializing database: {ex.Message}\n\nPlease ensure MySQL is running and accessible.",
+                    "Database Initialization Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                System.Diagnostics.Debug.WriteLine($"Database initialization error: {ex.Message}");
+            }
         }
 
         private void LoadEditions ()
