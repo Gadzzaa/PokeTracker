@@ -87,6 +87,13 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 - **Remove Copy**: Use **➖ Remove Copy** button (requires 2+ copies)
 - **Delete Card**: Click the **✕** button next to the card name
 
+### Keyboard Navigation
+
+- **Arrow Right (→)**: Move to next card
+- **Arrow Left (←)**: Move to previous card
+- Navigation wraps around (last card → first card and vice versa)
+
+
 ## 🏗️ Built With
 
 - [WPF](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/) - Windows Presentation Foundation
@@ -94,16 +101,6 @@ You can access database settings anytime via the **⚙️ Database Settings** bu
 - [MySQL](https://www.mysql.com/) - Database
 - [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM
 - [TCG DEX Api](https://tcgdex.dev/rest) - Card data and images
-
-## 📁 Project Structure
-PokemonInventory_Tracker / 
-├── MainWindow.xaml(.cs)           # Main application window
-├── AddCardDialog.xaml(.cs)        # Add/update card dialog
-├── AddEditionDialog.xaml(.cs)     # Add edition dialog
-├── DatabaseSettingsDialog.xaml(.cs) # Database config dialog
-├── PokemonTcgService.cs           # API service 
-├── DatabaseConfig.cs              # Database configuration 
-└── README.md                      # This file
 
 
 ## 🗄️ Database Schema
@@ -139,6 +136,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## 💖 Support
+
+If you find this project helpful and would like to support its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gadzzaa)
+
+Your support helps keep this project maintained and improved! ☕
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -153,6 +158,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/PokemonInventory_Tracker/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/PokemonInventory_Tracker/discussions)
+- **Ko-fi**: [Support the project](https://ko-fi.com/gadzzaa)
 
 ## 🔮 Future Features
 
@@ -167,3 +173,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ for Pokémon TCG collectors
+
+**Note**: This application is not affiliated with or endorsed by The Pokémon Company, Nintendo, or Game Freak. Pokémon is a registered trademark of The Pokémon Company.
