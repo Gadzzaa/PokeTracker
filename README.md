@@ -33,8 +33,8 @@ Your support helps keep this project maintained and improved! ☕
 <img src="Screenshots/Screenshot 1.png" width="1000" height="1600" />
 </p>
 <p align="center">
-   <img src="Screenshots/Screenshot 2.png" width="500" height="800" />
-   <img src="Screenshots/Screenshot 4.png" width="500" height="800" />
+   <img src="Screenshots/Screenshot 2.png" width="300" height="600" />
+   <img src="Screenshots/Screenshot 4.png" width="300" height="600" />
 </p>
 
 ## 🚀 Getting Started
