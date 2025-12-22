@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Animation;
 using System.Windows.Media;
@@ -54,7 +55,6 @@ namespace WpfApp1
 
         public MainWindow ()
         {
-            // Load database configuration
             dbConfig = DatabaseConfig.Load();
             connStr = dbConfig.GetConnectionString();
             
@@ -63,8 +63,10 @@ namespace WpfApp1
 
             InitializeComponent();
 
-            // Initialize RenderTransform for animations
             DisplayArea.RenderTransform = new TranslateTransform();
+
+            // Add keyboard navigation for arrow keys
+            this.PreviewKeyDown += MainWindow_PreviewKeyDown;
 
             // Initialize database
             if (!InitializeDatabase())
@@ -79,6 +81,9 @@ namespace WpfApp1
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
+            
+            // Unsubscribe from keyboard event
+            this.PreviewKeyDown -= MainWindow_PreviewKeyDown;
             
             // Clear image cache to free memory
             ClearImageCache();
@@ -795,5 +800,45 @@ namespace WpfApp1
                 }
             }
         }
+
+        // Add keyboard navigation handler
+        private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Only handle arrow keys when not animating and a card is selected
+            if (isAnimating || CardListBox.ItemsSource == null)
+                return;
+
+            if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                var items = CardListBox.Items;
+                if (items.Count == 0)
+                    return;
+
+                int currentIndex = CardListBox.SelectedIndex;
+                int newIndex = currentIndex;
+
+                if (e.Key == Key.Right)
+                {
+                    // Move to next card
+                    newIndex = currentIndex + 1;
+                    if (newIndex >= items.Count)
+                        newIndex = 0; // Wrap to first card
+                }
+                else if (e.Key == Key.Left)
+                {
+                    // Move to previous card
+                    newIndex = currentIndex - 1;
+                    if (newIndex < 0)
+                        newIndex = items.Count - 1; // Wrap to last card
+                }
+
+                if (newIndex != currentIndex)
+                {
+                    CardListBox.SelectedIndex = newIndex;
+                    CardListBox.ScrollIntoView(CardListBox.SelectedItem);
+                    e.Handled = true; // Prevent default behavior
+                }
+            }
         }
+    }
 }
