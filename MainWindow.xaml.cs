@@ -8,21 +8,21 @@ using System.Windows.Media;
 using Dapper;
 using MySql.Data.MySqlClient;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Net.Http;
 
 namespace WpfApp1
 {
-    // Image cache entry to track usage
     public class CachedImage
     {
         public BitmapImage Image { get; set; }
         public DateTime LastAccessed { get; set; }
         public long EstimatedSize { get; set; }
 
-        public CachedImage(BitmapImage image)
+        public CachedImage (BitmapImage image)
         {
             Image = image;
             LastAccessed = DateTime.Now;
-            // Rough estimate: width * height * 4 bytes per pixel
             EstimatedSize = image.PixelWidth * image.PixelHeight * 4;
         }
     }
@@ -49,7 +49,6 @@ namespace WpfApp1
         private bool isAnimating = false;
         private Card? pendingCard = null;
 
-        // Cache configuration
         private const int MAX_CACHE_SIZE_MB = 1000;
         private const int MAX_CACHE_ITEMS = 100;
         private long currentCacheSize = 0;
@@ -58,7 +57,7 @@ namespace WpfApp1
         {
             dbConfig = DatabaseConfig.Load();
             connStr = dbConfig.GetConnectionString();
-            
+
             editionMap = new Dictionary<string, (int Id, string Identifier)>();
             imageCache = new ConcurrentDictionary<string, CachedImage>();
 
@@ -66,32 +65,32 @@ namespace WpfApp1
 
             DisplayArea.RenderTransform = new TranslateTransform();
 
-            // Add keyboard navigation for arrow keys
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
 
-            // Initialize database
             if (!InitializeDatabase())
             {
                 ShowDatabaseSettingsDialog();
             }
 
             LoadEditions();
+
+            this.Loaded += MainWindow_Loaded;
         }
 
-        // Clean up resources when window closes
-        protected override void OnClosed(EventArgs e)
+        private async void MainWindow_Loaded (object sender, RoutedEventArgs e)
+        {
+            await CheckAndUpdatePricesAsync();
+        }
+
+        protected override void OnClosed (EventArgs e)
         {
             base.OnClosed(e);
-            
-            // Unsubscribe from keyboard event
+
             this.PreviewKeyDown -= MainWindow_PreviewKeyDown;
-            
-            // Clear image cache to free memory
             ClearImageCache();
-            
         }
 
-        private void ClearImageCache()
+        private void ClearImageCache ()
         {
             foreach (var entry in imageCache.Values)
             {
@@ -99,48 +98,41 @@ namespace WpfApp1
             }
             imageCache.Clear();
             currentCacheSize = 0;
-            
-            // Force garbage collection
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
         }
 
-        private void TrimCache()
+        private void TrimCache ()
         {
-            // Check if we need to trim
             long maxSize = MAX_CACHE_SIZE_MB * 1024 * 1024;
-            
+
             if (imageCache.Count <= MAX_CACHE_ITEMS && currentCacheSize <= maxSize)
             {
                 return;
             }
 
-
-            // Get currently visible card images to keep them
             HashSet<string> protectedUrls = new HashSet<string>();
             if (CardListBox.ItemsSource is List<Card> cards)
             {
-                // Protect images for visible cards (current edition)
                 foreach (var card in cards.Where(c => !string.IsNullOrEmpty(c.Image)))
                 {
                     protectedUrls.Add(card.Image!);
                 }
             }
 
-            // Sort by last accessed time (oldest first)
             var sortedEntries = imageCache
                 .Where(kvp => !protectedUrls.Contains(kvp.Key))
                 .OrderBy(kvp => kvp.Value.LastAccessed)
                 .ToList();
 
-            // Remove oldest entries until we're under limits
             int removed = 0;
             foreach (var entry in sortedEntries)
             {
                 if (imageCache.Count <= MAX_CACHE_ITEMS / 2 && currentCacheSize <= maxSize / 2)
                 {
-                    break; // Stop when we're at 50% capacity
+                    break;
                 }
 
                 if (imageCache.TryRemove(entry.Key, out var cached))
@@ -151,15 +143,13 @@ namespace WpfApp1
                 }
             }
 
-
-            // Force garbage collection after significant cleanup
             if (removed > 10)
             {
                 GC.Collect();
             }
         }
 
-        private bool InitializeDatabase()
+        private bool InitializeDatabase ()
         {
             try
             {
@@ -173,7 +163,6 @@ namespace WpfApp1
                                       CHARACTER SET utf8mb4 
                                       COLLATE utf8mb4_general_ci;";
                     conn.Execute(createDbSql);
-
                 }
 
                 using (var conn = new MySqlConnection(connStr))
@@ -219,9 +208,7 @@ namespace WpfApp1
 
                         conn.Execute(addForeignKeySql);
                     }
-                    catch
-                    {
-                    }
+                    catch { }
                 }
 
                 return true;
@@ -237,12 +224,12 @@ namespace WpfApp1
             }
         }
 
-        private void DatabaseSettings_Click(object sender, RoutedEventArgs e)
+        private void DatabaseSettings_Click (object sender, RoutedEventArgs e)
         {
             ShowDatabaseSettingsDialog();
         }
 
-        private void ShowDatabaseSettingsDialog()
+        private void ShowDatabaseSettingsDialog ()
         {
             var dialog = new DatabaseSettingsDialog(dbConfig);
             if (dialog.ShowDialog() == true)
@@ -293,15 +280,14 @@ namespace WpfApp1
             {
                 ClearCardDetails();
                 await AnimateEditionChange();
-                
-                // Trim cache when switching editions
+
                 TrimCache();
-                
+
                 await LoadCardsForEditionAsync(selectedEdition);
             }
         }
 
-        private async Task AnimateEditionChange()
+        private async Task AnimateEditionChange ()
         {
             var fadeOut = new DoubleAnimation
             {
@@ -309,7 +295,7 @@ namespace WpfApp1
                 To = 0,
                 Duration = TimeSpan.FromMilliseconds(150)
             };
-            
+
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeOut);
             CardListBox.BeginAnimation(OpacityProperty, fadeOut);
             await Task.Delay(150);
@@ -320,7 +306,7 @@ namespace WpfApp1
                 To = 1,
                 Duration = TimeSpan.FromMilliseconds(200)
             };
-            
+
             CardDisplayPanel.BeginAnimation(OpacityProperty, fadeIn);
             CardListBox.BeginAnimation(OpacityProperty, fadeIn);
         }
@@ -349,7 +335,6 @@ namespace WpfApp1
 
             if (cards.Count > 0 && selectFirst)
             {
-                // Set isAnimating BEFORE selecting to prevent animation during load
                 isAnimating = true;
 
                 CardListBox.SelectedIndex = 0;
@@ -360,10 +345,7 @@ namespace WpfApp1
                     DisplayCardDetails(firstCard);
                 }
 
-                // Reset isAnimating AFTER displaying
                 isAnimating = false;
-
-                // Clear any pending card that might have been queued
                 pendingCard = null;
             }
             else if (cards.Count == 0)
@@ -373,18 +355,18 @@ namespace WpfApp1
 
             await PreloadImagesAsync(cards);
         }
-        private async Task PreloadImagesAsync(List<Card> cards)
+
+        private async Task PreloadImagesAsync (List<Card> cards)
         {
             var imagesToLoad = cards
                 .Where(c => !string.IsNullOrEmpty(c.Image) && !imageCache.ContainsKey(c.Image))
                 .Select(c => c.Image!)
                 .Distinct()
-                .Take(10) // Only preload first 10 images
+                .Take(10)
                 .ToList();
 
             if (imagesToLoad.Count == 0)
                 return;
-
 
             var tasks = imagesToLoad.Select(async imageUrl =>
             {
@@ -400,19 +382,15 @@ namespace WpfApp1
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { }
             });
 
             await Task.WhenAll(tasks);
-            
-            // Trim cache if needed after preloading
-            TrimCache();
 
+            TrimCache();
         }
 
-        private async Task<BitmapImage?> LoadImageAsync(string imageUrl)
+        private async Task<BitmapImage?> LoadImageAsync (string imageUrl)
         {
             try
             {
@@ -439,7 +417,7 @@ namespace WpfApp1
                     return bitmap;
                 });
             }
-            catch 
+            catch
             {
                 return null;
             }
@@ -462,7 +440,6 @@ namespace WpfApp1
 
                             if (existingCard != null)
                             {
-                                // Card already exists - update copy count and focus it
                                 using (var conn = new MySqlConnection(connStr))
                                 {
                                     var updatedCard = conn.QueryFirstOrDefault<Card>(
@@ -474,23 +451,16 @@ namespace WpfApp1
 
                                     if (updatedCard != null)
                                     {
-                                        // Update the card in the list
                                         existingCard.Copies = updatedCard.Copies;
 
-                                        // Check if this card is already selected
                                         if (CardListBox.SelectedItem is Card currentCard && currentCard.Id == updatedCard.Id)
                                         {
-                                            // Already selected - just update the display
                                             CardCopies.Text = updatedCard.Copies.ToString();
                                             CardListBox.Items.Refresh();
                                         }
                                         else
                                         {
-                                            // Not selected - focus it with animation
                                             CardListBox.Items.Refresh();
-
-                                            // DON'T set isAnimating or clear display
-                                            // Let CardListBox_SelectionChanged handle everything
                                             CardListBox.SelectedItem = existingCard;
                                             CardListBox.ScrollIntoView(existingCard);
                                         }
@@ -499,23 +469,19 @@ namespace WpfApp1
                             }
                             else
                             {
-                                // New card added - load cards WITHOUT auto-selecting first one
                                 isAnimating = true;
                                 await LoadCardsForEditionAsync(selectedEdition, selectFirst: false);
 
                                 var newCard = ((List<Card>)CardListBox.ItemsSource).FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
                                 if (newCard != null)
                                 {
-                                    // Clear display first
                                     ClearCardDetails();
                                     DisplayArea.Opacity = 0;
 
                                     await Task.Delay(50);
 
-                                    // Reset isAnimating BEFORE selecting
                                     isAnimating = false;
 
-                                    // Now select the new card - this will trigger the animation
                                     CardListBox.SelectedItem = newCard;
                                     CardListBox.ScrollIntoView(newCard);
                                 }
@@ -535,20 +501,12 @@ namespace WpfApp1
             }
         }
 
-
-
-        private async Task AnimateNewCardDisplay(Card card)
+        private async Task AnimateNewCardDisplay (Card card)
         {
-            // Ensure we start from invisible state
             DisplayArea.Opacity = 0;
-            
-            // Update content while invisible
             DisplayCardDetails(card);
-            
-            // Small delay to ensure content is rendered
             await Task.Delay(50);
-            
-            // Slide in and fade in NEW content
+
             var slideIn = new DoubleAnimation
             {
                 From = 30,
@@ -556,17 +514,17 @@ namespace WpfApp1
                 Duration = TimeSpan.FromMilliseconds(300),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
-            
+
             var fadeIn = new DoubleAnimation
             {
                 From = 0,
                 To = 1,
                 Duration = TimeSpan.FromMilliseconds(300)
             };
-            
+
             DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
             DisplayArea.BeginAnimation(OpacityProperty, fadeIn);
-            
+
             await Task.Delay(300);
         }
 
@@ -574,21 +532,18 @@ namespace WpfApp1
         {
             if (CardListBox.SelectedItem is Card selectedCard)
             {
-                // If already animating, queue this card and return
                 if (isAnimating)
                 {
                     pendingCard = selectedCard;
                     return;
                 }
 
-                // Process the selected card
                 await AnimateCardSelection(selectedCard);
 
-                // Process any pending card selection
                 while (pendingCard != null)
                 {
                     var cardToShow = pendingCard;
-                    pendingCard = null; // Clear before processing
+                    pendingCard = null;
                     await AnimateCardSelection(cardToShow);
                 }
             }
@@ -615,16 +570,12 @@ namespace WpfApp1
             DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
             DisplayArea.BeginAnimation(OpacityProperty, fadeOut);
 
-            // Wait for animation to complete before updating content
             await Task.Delay(150);
 
-            // NOW update the content (while it's invisible)
             DisplayCardDetails(selectedCard);
 
-            // Small delay to ensure content is updated
             await Task.Delay(50);
 
-            // Slide in and fade in NEW content
             var slideIn = new DoubleAnimation
             {
                 From = 30,
@@ -647,8 +598,7 @@ namespace WpfApp1
             isAnimating = false;
         }
 
-
-        private void DisplayCardDetails(Card card)
+        private void DisplayCardDetails (Card card)
         {
             CardNumber.Text = card.Number.ToString();
             CardName.Text = card.Name;
@@ -659,12 +609,10 @@ namespace WpfApp1
             var editionName = editionMap.FirstOrDefault(x => x.Value.Id == card.EditionId).Key ?? "Unknown";
             CardEdition.Text = editionName;
 
-            // Load image with cache management
             if (!string.IsNullOrEmpty(card.Image))
             {
                 if (imageCache.TryGetValue(card.Image, out var cachedImage))
                 {
-                    // Update last accessed time
                     cachedImage.LastAccessed = DateTime.Now;
                     CardImage.Source = cachedImage.Image;
                 }
@@ -681,7 +629,7 @@ namespace WpfApp1
             CardCopies.Text = card.Copies.ToString();
         }
 
-        private async Task LoadAndDisplayImageAsync(string imageUrl)
+        private async Task LoadAndDisplayImageAsync (string imageUrl)
         {
             try
             {
@@ -692,7 +640,7 @@ namespace WpfApp1
                     if (imageCache.TryAdd(imageUrl, cached))
                     {
                         currentCacheSize += cached.EstimatedSize;
-                        TrimCache(); // Check if we need to trim after adding
+                        TrimCache();
                     }
                     CardImage.Source = bitmap;
                 }
@@ -716,17 +664,17 @@ namespace WpfApp1
             PullDate.Text = "N/A";
             CardEdition.Text = "N/A";
             CardImage.Source = null;
-            CardCopies.Text = "0"; // Reset copies text
+            CardCopies.Text = "0";
         }
 
-        private async void AddEdition_Click(object sender, RoutedEventArgs e)
+        private async void AddEdition_Click (object sender, RoutedEventArgs e)
         {
             var dialog = new AddEditionDialog(connStr);
-            
+
             if (dialog.ShowDialog() == true)
             {
                 LoadEditions();
-                
+
                 if (EditionSelector.Items.Count > 0)
                 {
                     EditionSelector.SelectedIndex = EditionSelector.Items.Count - 1;
@@ -734,7 +682,7 @@ namespace WpfApp1
             }
         }
 
-        private async void DeleteCard_Click(object sender, RoutedEventArgs e)
+        private async void DeleteCard_Click (object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)
             {
@@ -773,7 +721,7 @@ namespace WpfApp1
             }
         }
 
-        private void RemoveCopy_Click(object sender, RoutedEventArgs e)
+        private void RemoveCopy_Click (object sender, RoutedEventArgs e)
         {
             if (CardListBox.SelectedItem is Card card)
             {
@@ -802,11 +750,8 @@ namespace WpfApp1
                             conn.Execute(sql, new { Id = card.Id });
                         }
 
-                        // Update the card object and UI
                         card.Copies--;
                         CardCopies.Text = card.Copies.ToString();
-                        
-                        // Refresh the list display to show updated count
                         CardListBox.Items.Refresh();
                     }
                     catch (Exception ex)
@@ -818,10 +763,8 @@ namespace WpfApp1
             }
         }
 
-        // Add keyboard navigation handler
-        private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void MainWindow_PreviewKeyDown (object sender, KeyEventArgs e)
         {
-            // Only handle arrow keys when not animating and a card is selected
             if (isAnimating || CardListBox.ItemsSource == null)
                 return;
 
@@ -836,26 +779,251 @@ namespace WpfApp1
 
                 if (e.Key == Key.Right)
                 {
-                    // Move to next card
                     newIndex = currentIndex + 1;
                     if (newIndex >= items.Count)
-                        newIndex = 0; // Wrap to first card
+                        newIndex = 0;
                 }
                 else if (e.Key == Key.Left)
                 {
-                    // Move to previous card
                     newIndex = currentIndex - 1;
                     if (newIndex < 0)
-                        newIndex = items.Count - 1; // Wrap to last card
+                        newIndex = items.Count - 1;
                 }
 
                 if (newIndex != currentIndex)
                 {
                     CardListBox.SelectedIndex = newIndex;
                     CardListBox.ScrollIntoView(CardListBox.SelectedItem);
-                    e.Handled = true; // Prevent default behavior
+                    e.Handled = true;
                 }
             }
+        }
+
+        private async Task CheckAndUpdatePricesAsync ()
+        {
+            try
+            {
+                if (dbConfig.LastPriceUpdate.HasValue &&
+                    dbConfig.LastPriceUpdate.Value.Date == DateTime.Today)
+                {
+                    return;
+                }
+
+                List<(int Id, int Number, string EditionIdentifier)> cardsToUpdate;
+                using (var conn = new MySqlConnection(connStr))
+                {
+                    string sql = @"
+                SELECT c.id as Id, c.number as Number, ce.edition_identifier as EditionIdentifier
+                FROM cards c
+                INNER JOIN card_editions ce ON c.edition_id = ce.id
+                ORDER BY c.id";
+
+                    cardsToUpdate = conn.Query<(int Id, int Number, string EditionIdentifier)>(sql).ToList();
+                }
+
+                if (cardsToUpdate.Count == 0)
+                {
+                    return;
+                }
+
+                var result = MessageBox.Show(
+                    $"Found {cardsToUpdate.Count} cards in your collection.\n\nWould you like to update all card prices?\n(This happens once per day and may take a few moments)",
+                    "Update Card Prices",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    dbConfig.LastPriceUpdate = DateTime.Now;
+                    dbConfig.Save();
+                    return;
+                }
+
+                var (successful, failed, failedCards) = await UpdateAllCardPricesAsync(cardsToUpdate);
+
+                dbConfig.LastPriceUpdate = DateTime.Now;
+                dbConfig.Save();
+
+                string message = $"Price update complete!\n\n";
+                message += $"Total cards: {cardsToUpdate.Count}\n";
+                message += $"✓ Successfully updated: {successful}\n";
+                message += $"✗ Failed to update: {failed}";
+
+                if (failed > 0)
+                {
+                    message += $"\n\n📝 Detailed error log saved to:\n";
+                    message += $"{Path.GetDirectoryName(ErrorLog.GetTodaysLogPath("price_update_failures"))}";
+                    message += $"\n\nWould you like to open the log folder?";
+
+                    var openLog = MessageBox.Show(
+                        message,
+                        "Update Complete",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (openLog == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            string logDir = Path.GetDirectoryName(ErrorLog.GetTodaysLogPath("price_update_failures"))!;
+                            System.Diagnostics.Process.Start("explorer.exe", logDir);
+                        }
+                        catch { }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(
+                        message,
+                        "Update Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+
+                if (EditionSelector.SelectedItem is string selectedEdition)
+                {
+                    await LoadCardsForEditionAsync(selectedEdition);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error updating prices: {ex.Message}\n\nYou can try again next time you open the app.",
+                    "Update Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private async Task<(int successful, int failed, List<string> failedCards)> UpdateAllCardPricesAsync (List<(int Id, int Number, string EditionIdentifier)> cardsToUpdate)
+        {
+            ProgressDialog? progressDialog = null;
+            int successful = 0;
+            int failed = 0;
+            var failedCards = new List<string>();
+
+            ErrorLog.Initialize();
+
+            try
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    progressDialog = new ProgressDialog();
+
+                    try
+                    {
+                        if (this.IsLoaded)
+                        {
+                            progressDialog.Owner = this;
+                        }
+                    }
+                    catch { }
+
+                    progressDialog.Show();
+                });
+
+                var apiService = new PokemonTcgService();
+                int processed = 0;
+
+                int batchSize = 5;
+                for (int i = 0; i < cardsToUpdate.Count; i += batchSize)
+                {
+                    var batch = cardsToUpdate.Skip(i).Take(batchSize);
+                    var tasks = batch.Select(async card =>
+                    {
+                        string formattedNumber = card.Number.ToString("D3");
+                        string fullCardId = $"{card.EditionIdentifier}-{formattedNumber}";
+
+                        try
+                        {
+                            var cardData = await apiService.GetCardByNumberAsync(fullCardId);
+
+                            if (cardData == null)
+                            {
+                                string reason = "Card not found in API";
+                                ErrorLog.LogPriceUpdateFailure(fullCardId, card.EditionIdentifier, card.Number, reason);
+                                return (false, fullCardId + " - " + reason, 0m);
+                            }
+
+                            if (cardData.Price <= 0)
+                            {
+                                string reason = $"Invalid price returned (${cardData.Price:F2})";
+                                ErrorLog.LogPriceUpdateFailure(fullCardId, card.EditionIdentifier, card.Number, reason);
+                                return (false, fullCardId + " - " + reason, 0m);
+                            }
+
+                            decimal oldPrice = 0m;
+                            using (var conn = new MySqlConnection(connStr))
+                            {
+                                oldPrice = conn.QueryFirstOrDefault<decimal>(
+                                    "SELECT price FROM cards WHERE id = @Id",
+                                    new { Id = card.Id });
+
+                                string updateSql = "UPDATE cards SET price = @Price WHERE id = @Id";
+                                conn.Execute(updateSql, new { Price = cardData.Price, Id = card.Id });
+                            }
+
+                            ErrorLog.LogPriceUpdateSuccess(fullCardId, oldPrice, cardData.Price);
+                            return (true, string.Empty, cardData.Price);
+                        }
+                        catch (HttpRequestException ex)
+                        {
+                            string reason = $"Network error: {ex.Message}";
+                            ErrorLog.LogPriceUpdateFailure(fullCardId, card.EditionIdentifier, card.Number, reason);
+                            return (false, fullCardId + " - Network error", 0m);
+                        }
+                        catch (TimeoutException)
+                        {
+                            string reason = "Request timeout";
+                            ErrorLog.LogPriceUpdateFailure(fullCardId, card.EditionIdentifier, card.Number, reason);
+                            return (false, fullCardId + " - Timeout", 0m);
+                        }
+                        catch (Exception ex)
+                        {
+                            string reason = $"Unknown error: {ex.Message}";
+                            ErrorLog.LogPriceUpdateFailure(fullCardId, card.EditionIdentifier, card.Number, reason);
+                            return (false, fullCardId + " - " + ex.Message, 0m);
+                        }
+                    });
+
+                    var results = await Task.WhenAll(tasks);
+
+                    foreach (var (success, errorInfo, price) in results)
+                    {
+                        processed++;
+                        if (success)
+                        {
+                            successful++;
+                        }
+                        else
+                        {
+                            failed++;
+                            if (!string.IsNullOrEmpty(errorInfo))
+                            {
+                                failedCards.Add(errorInfo);
+                            }
+                        }
+
+                        progressDialog?.UpdateProgress(processed, cardsToUpdate.Count, successful, failed);
+                    }
+
+                    if (i + batchSize < cardsToUpdate.Count)
+                    {
+                        await Task.Delay(2000);
+                    }
+                }
+
+                ErrorLog.CreateSummaryReport(cardsToUpdate.Count, successful, failed, failedCards);
+
+                progressDialog?.SetCompleted(cardsToUpdate.Count, successful, failed);
+                await Task.Delay(2000);
+            }
+            finally
+            {
+                progressDialog?.Close();
+            }
+
+            return (successful, failed, failedCards);
         }
     }
 }

@@ -1,0 +1,92 @@
+﻿<Window x:Class="WpfApp1.ProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Updating Card Prices" 
+        Height="250" 
+        Width="500"
+        WindowStartupLocation="CenterOwner"
+        Background="#1a1a2e"
+        FontFamily="Segoe UI"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        Opacity="0">
+
+    <Window.Resources>
+        <LinearGradientBrush x:Key="PokemonGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#ee1515" Offset="0"/>
+            <GradientStop Color="#ff6b6b" Offset="0.5"/>
+            <GradientStop Color="#feca57" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                   From="0" To="1" Duration="0:0:0.3"/>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Border BorderBrush="{StaticResource PokemonGradient}" 
+            BorderThickness="3" 
+            CornerRadius="10">
+        <Grid Margin="30">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <TextBlock Grid.Row="0" 
+                       Text="Updating Card Prices" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Foreground="#feca57"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
+
+            <!-- Status Text -->
+            <TextBlock Grid.Row="1"
+                       Name="StatusText"
+                       Text="Preparing to update..."
+                       FontSize="14"
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,15"/>
+
+            <!-- Progress Bar -->
+            <StackPanel Grid.Row="2" Margin="0,0,0,15">
+                <ProgressBar Name="UpdateProgressBar"
+                             Height="30"
+                             Minimum="0"
+                             Maximum="100"
+                             Value="0"
+                             Background="#0f3460"
+                             Foreground="{StaticResource PokemonGradient}"
+                             BorderThickness="2"
+                             BorderBrush="#feca57"/>
+
+                <TextBlock Name="ProgressText"
+                           Text="0 / 0 cards updated"
+                           FontSize="12"
+                           Foreground="#feca57"
+                           HorizontalAlignment="Center"
+                           Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- Details Text -->
+            <TextBlock Grid.Row="3"
+                       Name="DetailsText"
+                       Text="✓ 0 successful • ✗ 0 failed"
+                       FontSize="12"
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       Opacity="0.7"/>
+        </Grid>
+    </Border>
+</Window>

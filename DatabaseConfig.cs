@@ -24,6 +24,9 @@ namespace WpfApp1
 
         public string Database { get; set; } = "pokemon_2025";
         public int Port { get; set; } = 3306;
+        
+        // Track last price update date
+        public DateTime? LastPriceUpdate { get; set; }
 
         private static string ConfigFilePath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
