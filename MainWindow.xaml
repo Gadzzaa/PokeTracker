@@ -492,13 +492,13 @@
                                 CornerRadius="15" 
                                 BorderBrush="{StaticResource PokemonGradient}" 
                                 BorderThickness="4"
-                                Padding="12"
                                 VerticalAlignment="Top"
                                 Margin="15,0">
                             <Image Name="CardImage" 
                                    Width="300" 
                                    Height="415" 
-                                   Stretch="Uniform"
+                                   Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center">
                                 <Image.Triggers>
