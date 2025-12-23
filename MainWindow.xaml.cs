@@ -40,6 +40,12 @@ namespace WpfApp1
         public DateTime? PullDate { get; set; }
     }
 
+    public class EditionWithPrice
+    {
+        public string Name { get; set; } = string.Empty;
+        public decimal TotalValue { get; set; }
+    }
+
     public partial class MainWindow : Window
     {
         private string connStr;
@@ -257,17 +263,33 @@ namespace WpfApp1
                     "SELECT id, type, edition_identifier FROM card_editions").ToList();
 
                 editionMap.Clear();
-                List<string> editionNames = new List<string>();
+                var editionList = new List<EditionWithPrice>();
+                decimal totalCollectionValue = 0m;
 
                 foreach (var edition in editions)
                 {
                     editionMap[edition.Type] = (edition.Id, edition.EditionIdentifier);
-                    editionNames.Add(edition.Type);
+
+                    // Calculate total value for this edition
+                    string sql = @"SELECT COALESCE(SUM(price * copies), 0) as TotalValue
+                          FROM cards 
+                          WHERE edition_id = @EditionId";
+
+                    decimal editionValue = conn.QueryFirstOrDefault<decimal>(sql, new { EditionId = edition.Id });
+
+                    editionList.Add(new EditionWithPrice
+                    {
+                        Name = edition.Type,
+                        TotalValue = editionValue
+                    });
+
+                    totalCollectionValue += editionValue;
                 }
 
-                EditionSelector.ItemsSource = editionNames;
+                EditionSelector.ItemsSource = editionList;
+                TotalCollectionValue.Text = $"${totalCollectionValue:F2}";
 
-                if (editionNames.Count > 0)
+                if (editionList.Count > 0)
                 {
                     EditionSelector.SelectedIndex = 0;
                 }
@@ -276,14 +298,14 @@ namespace WpfApp1
 
         private async void EditionSelector_SelectionChanged (object sender, SelectionChangedEventArgs e)
         {
-            if (EditionSelector.SelectedItem is string selectedEdition)
+            if (EditionSelector.SelectedItem is EditionWithPrice selectedEdition)
             {
                 ClearCardDetails();
                 await AnimateEditionChange();
 
                 TrimCache();
 
-                await LoadCardsForEditionAsync(selectedEdition);
+                await LoadCardsForEditionAsync(selectedEdition.Name);
             }
         }
 
@@ -425,9 +447,9 @@ namespace WpfApp1
 
         private async void AddCard_Click (object sender, RoutedEventArgs e)
         {
-            if (EditionSelector.SelectedItem is string selectedEdition)
+            if (EditionSelector.SelectedItem is EditionWithPrice selectedEdition)
             {
-                var editionData = editionMap[selectedEdition];
+                var editionData = editionMap[selectedEdition.Name];
                 var dialog = new AddCardDialog(editionData.Id, editionData.Identifier, connStr);
 
                 if (dialog.ShowDialog() == true)
@@ -444,9 +466,9 @@ namespace WpfApp1
                                 {
                                     var updatedCard = conn.QueryFirstOrDefault<Card>(
                                         @"SELECT id as Id, number as Number, name as Name, 
-                                  rarity as Rarity, price as Price, image as Image, 
-                                  pull_date as PullDate, edition_id as EditionId, copies as Copies
-                                  FROM cards WHERE id = @Id",
+                          rarity as Rarity, price as Price, image as Image, 
+                          pull_date as PullDate, edition_id as EditionId, copies as Copies
+                          FROM cards WHERE id = @Id",
                                     new { Id = dialog.NewCardId.Value });
 
                                     if (updatedCard != null)
@@ -470,7 +492,7 @@ namespace WpfApp1
                             else
                             {
                                 isAnimating = true;
-                                await LoadCardsForEditionAsync(selectedEdition, selectFirst: false);
+                                await LoadCardsForEditionAsync(selectedEdition.Name, selectFirst: false);
 
                                 var newCard = ((List<Card>)CardListBox.ItemsSource).FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
                                 if (newCard != null)
@@ -491,6 +513,25 @@ namespace WpfApp1
                                 }
                             }
                         }
+
+                        // Reload editions while preserving selection WITHOUT triggering SelectionChanged
+                        string currentEditionName = selectedEdition.Name;
+
+                        // Temporarily unsubscribe from SelectionChanged event
+                        EditionSelector.SelectionChanged -= EditionSelector_SelectionChanged;
+
+                        LoadEditions();
+
+                        // Restore the selection to the current edition
+                        var editionToSelect = ((List<EditionWithPrice>)EditionSelector.ItemsSource)
+                            .FirstOrDefault(e => e.Name == currentEditionName);
+                        if (editionToSelect != null)
+                        {
+                            EditionSelector.SelectedItem = editionToSelect;
+                        }
+
+                        // Re-subscribe to SelectionChanged event
+                        EditionSelector.SelectionChanged += EditionSelector_SelectionChanged;
                     }
                 }
             }
@@ -707,9 +748,26 @@ namespace WpfApp1
                             imageCache.TryRemove(card.Image, out _);
                         }
 
-                        if (EditionSelector.SelectedItem is string selectedEdition)
+                        if (EditionSelector.SelectedItem is EditionWithPrice selectedEdition)
                         {
-                            await LoadCardsForEditionAsync(selectedEdition);
+                            string currentEditionName = selectedEdition.Name;
+
+                            await LoadCardsForEditionAsync(selectedEdition.Name);
+
+                            // Temporarily unsubscribe from SelectionChanged event
+                            EditionSelector.SelectionChanged -= EditionSelector_SelectionChanged;
+
+                            LoadEditions();
+
+                            var editionToSelect = ((List<EditionWithPrice>)EditionSelector.ItemsSource)
+                                .FirstOrDefault(e => e.Name == currentEditionName);
+                            if (editionToSelect != null)
+                            {
+                                EditionSelector.SelectedItem = editionToSelect;
+                            }
+
+                            // Re-subscribe to SelectionChanged event
+                            EditionSelector.SelectionChanged += EditionSelector_SelectionChanged;
                         }
                     }
                     catch (Exception ex)
@@ -753,6 +811,27 @@ namespace WpfApp1
                         card.Copies--;
                         CardCopies.Text = card.Copies.ToString();
                         CardListBox.Items.Refresh();
+
+                        // Reload editions to update prices while preserving selection
+                        if (EditionSelector.SelectedItem is EditionWithPrice selectedEdition)
+                        {
+                            string currentEditionName = selectedEdition.Name;
+
+                            // Temporarily unsubscribe from SelectionChanged event
+                            EditionSelector.SelectionChanged -= EditionSelector_SelectionChanged;
+
+                            LoadEditions();
+
+                            var editionToSelect = ((List<EditionWithPrice>)EditionSelector.ItemsSource)
+                                .FirstOrDefault(e => e.Name == currentEditionName);
+                            if (editionToSelect != null)
+                            {
+                                EditionSelector.SelectedItem = editionToSelect;
+                            }
+
+                            // Re-subscribe to SelectionChanged event
+                            EditionSelector.SelectionChanged += EditionSelector_SelectionChanged;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -880,9 +959,10 @@ namespace WpfApp1
                         MessageBoxImage.Information);
                 }
 
-                if (EditionSelector.SelectedItem is string selectedEdition)
+                if (EditionSelector.SelectedItem is EditionWithPrice selectedEdition)
                 {
-                    await LoadCardsForEditionAsync(selectedEdition);
+                    await LoadCardsForEditionAsync(selectedEdition.Name);
+                    LoadEditions();
                 }
             }
             catch (Exception ex)

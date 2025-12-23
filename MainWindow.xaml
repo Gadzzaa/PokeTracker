@@ -24,7 +24,6 @@
             <GradientStop Color="#16213e" Offset="1"/>
         </LinearGradientBrush>
 
-        <!-- Hover Effect for ListBox Items - FIXED NO MOVEMENT -->
         <Style x:Key="PokemonListBoxItem" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#feca57"/>
@@ -37,21 +36,29 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="ItemBorder" 
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="8"
+                        Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
+                                <Setter TargetName="ItemBorder" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#ee1515" Opacity="0.5"/>
+                                    </Setter.Value>
+                                </Setter>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
+                                <Setter TargetName="ItemBorder" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Color="#ff6b6b" Opacity="0.5"/>
+                                    </Setter.Value>
+                                </Setter>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                             </Trigger>
@@ -240,6 +247,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
@@ -262,22 +270,69 @@
                          ItemContainerStyle="{StaticResource PokemonListBoxItem}"
                          SelectionChanged="EditionSelector_SelectionChanged"
                          Margin="8,0,8,8">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Column="0"
+                                          Text="{Binding Name}" 
+                                          FontSize="15" 
+                                          TextTrimming="CharacterEllipsis"
+                                          VerticalAlignment="Center"/>
+                                
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding TotalValue, StringFormat='${0:F2}'}" 
+                                          FontSize="13" 
+                                          FontWeight="Bold"
+                                          Foreground="#5cd85a"
+                                          VerticalAlignment="Center"
+                                          Margin="8,0,0,0"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- Database Settings Button -->
-                <Button Grid.Row="2" 
-                        Content="⚙️ Database Settings" 
-                        Style="{StaticResource PokemonButton}"
-                        Click="DatabaseSettings_Click"
-                        Margin="12,8,12,8"
-                        Background="#3498db"/>
+                <Border Grid.Row="2" 
+                Background="#1a2a38" 
+                Padding="15" 
+                CornerRadius="10" 
+                Margin="12,8,12,8"
+                BorderBrush="#5cd85a" 
+                BorderThickness="2">
+                    <StackPanel>
+                        <TextBlock Text="Total Collection Value" 
+                    FontSize="14" 
+                    Foreground="#feca57"
+                    HorizontalAlignment="Center"
+                    Margin="0,0,0,8"/>
+                        <TextBlock Name="TotalCollectionValue"
+                    Text="$0.00" 
+                    FontSize="22" 
+                    FontWeight="Bold"
+                    Foreground="#5cd85a"
+                    HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
 
-                <!-- Add Edition Button -->
+
                 <Button Grid.Row="3" 
-                        Content="➕ Add Edition" 
-                        Style="{StaticResource PokemonButton}"
-                        Click="AddEdition_Click"
-                        Margin="12,0,12,12"/>
+                Content="⚙️ Database Settings" 
+                Style="{StaticResource PokemonButton}"
+                Click="DatabaseSettings_Click"
+                Margin="12,0,12,8"
+                Background="#3498db"/>
+
+
+                <Button Grid.Row="4" 
+                Content="➕ Add Edition" 
+                Style="{StaticResource PokemonButton}"
+                Click="AddEdition_Click"
+                Margin="12,0,12,12"/>
+                
             </Grid>
         </Border>
 
@@ -319,11 +374,11 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
                                         <Border x:Name="ItemBorder" 
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -331,28 +386,36 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <ContentPresenter Grid.Column="0" 
-                                                 HorizontalAlignment="Left" 
-                                                 VerticalAlignment="Center"
-                                                 Margin="0,0,8,0"/>
+                                             HorizontalAlignment="Left" 
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,8,0"/>
 
                                                 <!-- Delete Button with animation -->
                                                 <Button Grid.Column="1" 
-                                        Content="✕" 
-                                        Style="{StaticResource DeleteButtonStyle}"
-                                        VerticalAlignment="Center"
-                                        Margin="8,0,0,0"
-                                        Click="DeleteCard_Click"
-                                        Tag="{Binding}"/>
+                                    Content="✕" 
+                                    Style="{StaticResource DeleteButtonStyle}"
+                                    VerticalAlignment="Center"
+                                    Margin="8,0,0,0"
+                                    Click="DeleteCard_Click"
+                                    Tag="{Binding}"/>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="ItemBorder" Property="Background" Value="#ee1515"/>
+                                                <Setter TargetName="ItemBorder" Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="#ee1515" Opacity="0.5"/>
+                                                    </Setter.Value>
+                                                </Setter>
                                                 <Setter Property="Foreground" Value="White"/>
                                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                                             </Trigger>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter TargetName="ItemBorder" Property="Background" Value="#ff6b6b"/>
+                                                <Setter TargetName="ItemBorder" Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="#ff6b6b" Opacity="0.5"/>
+                                                    </Setter.Value>
+                                                </Setter>
                                                 <Setter Property="Foreground" Value="White"/>
                                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#feca57"/>
                                             </Trigger>
