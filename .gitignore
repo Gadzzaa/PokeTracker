@@ -82,3 +82,4 @@ build-release.bat
 logo.png
 Properties/PublishProfiles/FolderProfile.pubxml
 Properties/PublishProfiles/FolderProfile1.pubxml
+/publish

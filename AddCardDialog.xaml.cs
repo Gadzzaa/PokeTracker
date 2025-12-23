@@ -93,11 +93,6 @@ namespace WpfApp1
                         StatusText.Text = "Card copy added successfully!";
                         await Task.Delay(500);
 
-                        MessageBox.Show($"Added another copy of '{cardData.Name}'!\n\nTotal copies: {existing.Value.Copies + 1}",
-                            "Copy Added",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-
                         NewCardId = existing.Value.Id; // Return existing card ID
                         DialogResult = true;
                         Close();

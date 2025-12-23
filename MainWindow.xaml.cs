@@ -324,7 +324,7 @@ namespace WpfApp1
             CardListBox.BeginAnimation(OpacityProperty, fadeIn);
         }
 
-        private async Task LoadCardsForEditionAsync(string editionType)
+        private async Task LoadCardsForEditionAsync (string editionType, bool selectFirst = true)
         {
             if (!editionMap.ContainsKey(editionType))
                 return;
@@ -335,39 +335,38 @@ namespace WpfApp1
             using (var conn = new MySqlConnection(connStr))
             {
                 string sql = @"SELECT id as Id, number as Number, name as Name, 
-                              rarity as Rarity, price as Price, image as Image, 
-                              pull_date as PullDate, edition_id as EditionId,
-                              copies as Copies
-                              FROM cards WHERE edition_id = @EditionId 
-                              ORDER BY price DESC";
+                      rarity as Rarity, price as Price, image as Image, 
+                      pull_date as PullDate, edition_id as EditionId,
+                      copies as Copies
+                      FROM cards WHERE edition_id = @EditionId 
+                      ORDER BY price DESC";
 
                 cards = conn.Query<Card>(sql, new { EditionId = editionId }).ToList();
             }
 
             CardListBox.ItemsSource = cards;
-            
+
             isAnimating = true;
-            
-            if (cards.Count > 0)
+
+            if (cards.Count > 0 && selectFirst) // Only select first if parameter is true
             {
                 CardListBox.SelectedIndex = 0;
                 await Task.Delay(50);
-                
+
                 if (CardListBox.SelectedItem is Card firstCard)
                 {
                     DisplayCardDetails(firstCard);
                 }
             }
-            else
+            else if (cards.Count == 0)
             {
                 ClearCardDetails();
             }
-            
+
             isAnimating = false;
 
             await PreloadImagesAsync(cards);
         }
-
         private async Task PreloadImagesAsync(List<Card> cards)
         {
             var imagesToLoad = cards
@@ -440,79 +439,85 @@ namespace WpfApp1
             }
         }
 
-        private async void AddCard_Click(object sender, RoutedEventArgs e)
+        private async void AddCard_Click (object sender, RoutedEventArgs e)
         {
             if (EditionSelector.SelectedItem is string selectedEdition)
             {
                 var editionData = editionMap[selectedEdition];
                 var dialog = new AddCardDialog(editionData.Id, editionData.Identifier, connStr);
-                
+
                 if (dialog.ShowDialog() == true)
                 {
                     if (dialog.NewCardId.HasValue)
                     {
-                        // Don't reload everything - just update the specific card
-                        isAnimating = true;
-                        
                         if (CardListBox.ItemsSource is List<Card> cards)
                         {
                             var existingCard = cards.FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
-                            
+
                             if (existingCard != null)
                             {
-                                // Card already exists - just update the copy count
+                                // Card already exists - update copy count and focus it
                                 using (var conn = new MySqlConnection(connStr))
                                 {
                                     var updatedCard = conn.QueryFirstOrDefault<Card>(
                                         @"SELECT id as Id, number as Number, name as Name, 
-                                          rarity as Rarity, price as Price, image as Image, 
-                                          pull_date as PullDate, edition_id as EditionId, copies as Copies
-                                          FROM cards WHERE id = @Id",
+                                  rarity as Rarity, price as Price, image as Image, 
+                                  pull_date as PullDate, edition_id as EditionId, copies as Copies
+                                  FROM cards WHERE id = @Id",
                                     new { Id = dialog.NewCardId.Value });
-                                    
+
                                     if (updatedCard != null)
                                     {
-                                        // Update the object in the list
+                                        // Update the card in the list
                                         existingCard.Copies = updatedCard.Copies;
-                                        
-                                        // Refresh display if this card is currently selected
+
+                                        // Check if this card is already selected
                                         if (CardListBox.SelectedItem is Card currentCard && currentCard.Id == updatedCard.Id)
                                         {
+                                            // Already selected - just update the display
                                             CardCopies.Text = updatedCard.Copies.ToString();
+                                            CardListBox.Items.Refresh();
                                         }
-                                        
-                                        // Refresh the list display to show updated count
-                                        CardListBox.Items.Refresh();
+                                        else
+                                        {
+                                            // Not selected - focus it with animation
+                                            CardListBox.Items.Refresh();
+
+                                            // DON'T set isAnimating or clear display
+                                            // Let CardListBox_SelectionChanged handle everything
+                                            CardListBox.SelectedItem = existingCard;
+                                            CardListBox.ScrollIntoView(existingCard);
+                                        }
                                     }
                                 }
-                                
-                                isAnimating = false;
                             }
                             else
                             {
-                                // New card added - reload the list
-                                await LoadCardsForEditionAsync(selectedEdition);
-                                
+                                // New card added - load cards WITHOUT auto-selecting first one
+                                isAnimating = true;
+                                await LoadCardsForEditionAsync(selectedEdition, selectFirst: false);
+
                                 var newCard = ((List<Card>)CardListBox.ItemsSource).FirstOrDefault(c => c.Id == dialog.NewCardId.Value);
                                 if (newCard != null)
                                 {
+                                    // Clear display first
                                     ClearCardDetails();
+                                    DisplayArea.Opacity = 0;
+
                                     await Task.Delay(50);
-                                    
+
+                                    // Reset isAnimating BEFORE selecting
+                                    isAnimating = false;
+
+                                    // Now select the new card - this will trigger the animation
                                     CardListBox.SelectedItem = newCard;
                                     CardListBox.ScrollIntoView(newCard);
-                                    
-                                    isAnimating = false;
-                                    await AnimateNewCardDisplay(newCard);
-                                    return;
                                 }
-                                
-                                isAnimating = false;
+                                else
+                                {
+                                    isAnimating = false;
+                                }
                             }
-                        }
-                        else
-                        {
-                            isAnimating = false;
                         }
                     }
                 }
@@ -523,6 +528,8 @@ namespace WpfApp1
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
+
+
 
         private async Task AnimateNewCardDisplay(Card card)
         {
