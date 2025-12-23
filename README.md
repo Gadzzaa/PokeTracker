@@ -2,11 +2,11 @@
 
 A modern WPF desktop application for managing your Pokémon Trading Card Game collection with real-time pricing from TCG DEX Api.
 
-![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![GitHub release](https://img.shields.io/github/v/release/gadzzaa/PokeTracker)
-![GitHub issues](https://img.shields.io/github/issues/gadzzaa/PokeTracker)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/en-us/download)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)](https://www.microsoft.com/en-us/software-download/windows11)
+[![GitHub release](https://img.shields.io/github/v/release/gadzzaa/PokeTracker)](https://github.com/Gadzzaa/PokeTracker/releases/latest)
+[![GitHub issues](https://img.shields.io/github/issues/gadzzaa/PokeTracker)](https://github.com/Gadzzaa/PokeTracker/issues)
 
 ## 🎯 Who This Is For
 
