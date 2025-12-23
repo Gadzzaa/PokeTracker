@@ -47,6 +47,7 @@ namespace WpfApp1
         private Dictionary<string, (int Id, string Identifier)> editionMap;
         private ConcurrentDictionary<string, CachedImage> imageCache;
         private bool isAnimating = false;
+        private Card? pendingCard = null;
 
         // Cache configuration
         private const int MAX_CACHE_SIZE_MB = 1000;
@@ -335,21 +336,22 @@ namespace WpfApp1
             using (var conn = new MySqlConnection(connStr))
             {
                 string sql = @"SELECT id as Id, number as Number, name as Name, 
-                      rarity as Rarity, price as Price, image as Image, 
-                      pull_date as PullDate, edition_id as EditionId,
-                      copies as Copies
-                      FROM cards WHERE edition_id = @EditionId 
-                      ORDER BY price DESC";
+              rarity as Rarity, price as Price, image as Image, 
+              pull_date as PullDate, edition_id as EditionId,
+              copies as Copies
+              FROM cards WHERE edition_id = @EditionId 
+              ORDER BY price DESC";
 
                 cards = conn.Query<Card>(sql, new { EditionId = editionId }).ToList();
             }
 
             CardListBox.ItemsSource = cards;
 
-            isAnimating = true;
-
-            if (cards.Count > 0 && selectFirst) // Only select first if parameter is true
+            if (cards.Count > 0 && selectFirst)
             {
+                // Set isAnimating BEFORE selecting to prevent animation during load
+                isAnimating = true;
+
                 CardListBox.SelectedIndex = 0;
                 await Task.Delay(50);
 
@@ -357,13 +359,17 @@ namespace WpfApp1
                 {
                     DisplayCardDetails(firstCard);
                 }
+
+                // Reset isAnimating AFTER displaying
+                isAnimating = false;
+
+                // Clear any pending card that might have been queued
+                pendingCard = null;
             }
             else if (cards.Count == 0)
             {
                 ClearCardDetails();
             }
-
-            isAnimating = false;
 
             await PreloadImagesAsync(cards);
         }
@@ -566,60 +572,81 @@ namespace WpfApp1
 
         private async void CardListBox_SelectionChanged (object sender, SelectionChangedEventArgs e)
         {
-            if (CardListBox.SelectedItem is Card selectedCard && !isAnimating)
+            if (CardListBox.SelectedItem is Card selectedCard)
             {
-                isAnimating = true;
-                
-                // Slide out and fade out OLD content
-                var slideOut = new DoubleAnimation
+                // If already animating, queue this card and return
+                if (isAnimating)
                 {
-                    From = 0,
-                    To = -30,
-                    Duration = TimeSpan.FromMilliseconds(150)
-                };
-                
-                var fadeOut = new DoubleAnimation
+                    pendingCard = selectedCard;
+                    return;
+                }
+
+                // Process the selected card
+                await AnimateCardSelection(selectedCard);
+
+                // Process any pending card selection
+                while (pendingCard != null)
                 {
-                    From = 1,
-                    To = 0,
-                    Duration = TimeSpan.FromMilliseconds(150)
-                };
-                
-                DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
-                DisplayArea.BeginAnimation(OpacityProperty, fadeOut);
-                
-                // Wait for animation to complete before updating content
-                await Task.Delay(150);
-                
-                // NOW update the content (while it's invisible)
-                DisplayCardDetails(selectedCard);
-                
-                // Small delay to ensure content is updated
-                await Task.Delay(50);
-                
-                // Slide in and fade in NEW content
-                var slideIn = new DoubleAnimation
-                {
-                    From = 30,
-                    To = 0,
-                    Duration = TimeSpan.FromMilliseconds(200),
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                
-                var fadeIn = new DoubleAnimation
-                {
-                    From = 0,
-                    To = 1,
-                    Duration = TimeSpan.FromMilliseconds(200)
-                };
-                
-                DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
-                DisplayArea.BeginAnimation(OpacityProperty, fadeIn);
-                
-                await Task.Delay(200);
-                isAnimating = false;
+                    var cardToShow = pendingCard;
+                    pendingCard = null; // Clear before processing
+                    await AnimateCardSelection(cardToShow);
+                }
             }
         }
+
+        private async Task AnimateCardSelection (Card selectedCard)
+        {
+            isAnimating = true;
+
+            var slideOut = new DoubleAnimation
+            {
+                From = 0,
+                To = -30,
+                Duration = TimeSpan.FromMilliseconds(150)
+            };
+
+            var fadeOut = new DoubleAnimation
+            {
+                From = 1,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(150)
+            };
+
+            DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
+            DisplayArea.BeginAnimation(OpacityProperty, fadeOut);
+
+            // Wait for animation to complete before updating content
+            await Task.Delay(150);
+
+            // NOW update the content (while it's invisible)
+            DisplayCardDetails(selectedCard);
+
+            // Small delay to ensure content is updated
+            await Task.Delay(50);
+
+            // Slide in and fade in NEW content
+            var slideIn = new DoubleAnimation
+            {
+                From = 30,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            var fadeIn = new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(200)
+            };
+
+            DisplayArea.RenderTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+            DisplayArea.BeginAnimation(OpacityProperty, fadeIn);
+
+            await Task.Delay(200);
+            isAnimating = false;
+        }
+
 
         private void DisplayCardDetails(Card card)
         {
